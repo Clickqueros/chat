@@ -144,20 +144,23 @@ class WAC_Chat_Post_Types {
       options:
         - label: "Quiero cotización"
           next: form_nombre
+
         - label: "Ver portafolio"
-          action: redirect
-          url: "/portafolio"
+          action:
+            type: redirect
+            url: "/portafolio"
+
         - label: "Hablar por WhatsApp"
-          action: whatsapp
-          phone: "+573154543344"
-          prefill: "Hola, quiero una asesoría."
+          action:
+            type: whatsapp
+            phone: "+573154543344"
+            prefill: "Hola, quiero una asesoría."
 
     form_nombre:
       type: question
       style: input
       validation: "name"
       store_as: "nombre"
-      text: "¿Cuál es tu nombre?"
       next: form_email
 
     form_email:
@@ -165,14 +168,14 @@ class WAC_Chat_Post_Types {
       style: input
       validation: "email"
       store_as: "email"
-      text: "¿Cuál es tu email?"
       next: gracias
 
     gracias:
       type: message
-      text: "¡Gracias {{nombre}}! Te escribo al correo {{email}} en breve."
-      action: event
-      event_name: "lead_capturado"`;
+      text: "¡Gracias, {{nombre}}! Te contacto al correo {{email}} en breve."
+      action:
+        type: event
+        name: "lead_capturado"`;
                         
                         configTextarea.value = exampleYAML;
                         

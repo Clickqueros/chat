@@ -225,6 +225,27 @@ class WAC_Chat_YAML_Processor {
                         $sanitized['funnel']['nodes'][$node_id]['phone'] = sanitize_text_field($node['phone']);
                     }
                     
+                    // Sanitizar action del nodo
+                    if (isset($node['action']) && is_array($node['action'])) {
+                        $sanitized['funnel']['nodes'][$node_id]['action'] = array();
+                        
+                        if (isset($node['action']['type'])) {
+                            $sanitized['funnel']['nodes'][$node_id]['action']['type'] = sanitize_text_field($node['action']['type']);
+                        }
+                        if (isset($node['action']['url'])) {
+                            $sanitized['funnel']['nodes'][$node_id]['action']['url'] = esc_url_raw($node['action']['url']);
+                        }
+                        if (isset($node['action']['phone'])) {
+                            $sanitized['funnel']['nodes'][$node_id]['action']['phone'] = sanitize_text_field($node['action']['phone']);
+                        }
+                        if (isset($node['action']['prefill'])) {
+                            $sanitized['funnel']['nodes'][$node_id]['action']['prefill'] = sanitize_textarea_field($node['action']['prefill']);
+                        }
+                        if (isset($node['action']['name'])) {
+                            $sanitized['funnel']['nodes'][$node_id]['action']['name'] = sanitize_text_field($node['action']['name']);
+                        }
+                    }
+                    
                     // Sanitizar opciones
                     if (isset($node['options']) && is_array($node['options'])) {
                         foreach ($node['options'] as $opt_index => $option) {
@@ -242,6 +263,27 @@ class WAC_Chat_YAML_Processor {
                             }
                             if (isset($option['prefill'])) {
                                 $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['prefill'] = sanitize_textarea_field($option['prefill']);
+                            }
+                            
+                            // Sanitizar action como objeto
+                            if (isset($option['action']) && is_array($option['action'])) {
+                                $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action'] = array();
+                                
+                                if (isset($option['action']['type'])) {
+                                    $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action']['type'] = sanitize_text_field($option['action']['type']);
+                                }
+                                if (isset($option['action']['url'])) {
+                                    $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action']['url'] = esc_url_raw($option['action']['url']);
+                                }
+                                if (isset($option['action']['phone'])) {
+                                    $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action']['phone'] = sanitize_text_field($option['action']['phone']);
+                                }
+                                if (isset($option['action']['prefill'])) {
+                                    $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action']['prefill'] = sanitize_textarea_field($option['action']['prefill']);
+                                }
+                                if (isset($option['action']['name'])) {
+                                    $sanitized['funnel']['nodes'][$node_id]['options'][$opt_index]['action']['name'] = sanitize_text_field($option['action']['name']);
+                                }
                             }
                         }
                     }
@@ -338,6 +380,12 @@ class WAC_Chat_YAML_Processor {
                         // Manejar opciones
                         if ($key === 'label') {
                             $result['funnel']['nodes'][$current_node]['options'][] = array('label' => trim($value, '"\''));
+                        } else if ($key === 'action' && empty($value)) {
+                            // Inicializar action como objeto
+                            $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
+                            if ($last_index >= 0) {
+                                $result['funnel']['nodes'][$current_node]['options'][$last_index]['action'] = array();
+                            }
                         } else {
                             $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
                             if ($last_index >= 0) {
@@ -354,11 +402,24 @@ class WAC_Chat_YAML_Processor {
                         }
                     }
                 } else if ($path_level === 4) {
-                    // Nivel de opciones individuales
+                    // Nivel de opciones individuales o action
                     if (isset($result['funnel']['nodes'][$current_node]['options'])) {
                         $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
                         if ($last_index >= 0) {
-                            $result['funnel']['nodes'][$current_node]['options'][$last_index][$key] = trim($value, '"\'');
+                            // Verificar si estamos dentro de un action
+                            if (isset($result['funnel']['nodes'][$current_node]['options'][$last_index]['action'])) {
+                                $result['funnel']['nodes'][$current_node]['options'][$last_index]['action'][$key] = trim($value, '"\'');
+                            } else {
+                                $result['funnel']['nodes'][$current_node]['options'][$last_index][$key] = trim($value, '"\'');
+                            }
+                        }
+                    }
+                } else if ($path_level === 5) {
+                    // Nivel dentro de action
+                    if (isset($result['funnel']['nodes'][$current_node]['options'])) {
+                        $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
+                        if ($last_index >= 0 && isset($result['funnel']['nodes'][$current_node]['options'][$last_index]['action'])) {
+                            $result['funnel']['nodes'][$current_node]['options'][$last_index]['action'][$key] = trim($value, '"\'');
                         }
                     }
                 }
