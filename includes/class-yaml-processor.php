@@ -36,13 +36,21 @@ class WAC_Chat_YAML_Processor {
             return new WP_Error('empty_yaml', __('Contenido YAML vacío', 'wac-chat-funnels'));
         }
         
+        // Log para debug
+        error_log('WAC Chat Funnels - Parsing YAML, length: ' . strlen($yaml_content));
+        error_log('WAC Chat Funnels - YAML first 200 chars: ' . substr($yaml_content, 0, 200));
+        error_log('WAC Chat Funnels - Symfony YAML available: ' . (self::is_symfony_yaml_available() ? 'YES' : 'NO'));
+        
         // Usar Symfony YAML si está disponible
         if (self::is_symfony_yaml_available()) {
             try {
+                error_log('WAC Chat Funnels - Using Symfony YAML parser');
                 $parsed = \Symfony\Component\Yaml\Yaml::parse(
                     $yaml_content, 
                     \Symfony\Component\Yaml\Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE
                 );
+                
+                error_log('WAC Chat Funnels - Symfony parsed result: ' . print_r($parsed, true));
                 
                 if ($parsed === null) {
                     return new WP_Error('invalid_yaml', __('YAML inválido', 'wac-chat-funnels'));
@@ -301,6 +309,9 @@ class WAC_Chat_YAML_Processor {
      * @return array|null Array parseado o null si falla
      */
     private static function fallback_yaml_parse($yaml_string) {
+        error_log('WAC Chat Funnels - Using fallback YAML parser');
+        error_log('WAC Chat Funnels - YAML length: ' . strlen($yaml_string));
+        
         // Implementación básica del parser simple que ya teníamos
         $lines = explode("\n", $yaml_string);
         $result = array();

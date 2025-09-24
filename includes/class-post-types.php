@@ -97,6 +97,7 @@ class WAC_Chat_Post_Types {
                     <button type="button" id="clear-editor-btn" class="button">🗑️ Clear</button>
                     <button type="button" id="force-debug-btn" class="button" style="background: #0073aa; color: white;">🚨 Force Debug</button>
                     <button type="button" id="test-parser-btn" class="button" style="background: #d63638; color: white;">🧪 Test Parser</button>
+                    <button type="button" id="install-composer-btn" class="button" style="background: #00a32a; color: white;">📦 Install Composer</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
@@ -307,6 +308,65 @@ class WAC_Chat_Post_Types {
                                 `;
                             }
                         });
+                    });
+                }
+            
+                // Install Composer button
+                const installComposerBtn = document.getElementById('install-composer-btn');
+                if (installComposerBtn) {
+                    installComposerBtn.addEventListener('click', function() {
+                        console.log('📦 Install Composer Button Clicked');
+                        
+                        const previewContainer = document.getElementById('wac-chat-preview');
+                        if (previewContainer) {
+                            previewContainer.innerHTML = `
+                                <div style="padding:16px;background:#e7f3ff;border:1px solid #b3d9ff;border-radius:6px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #0066cc;">📦 Instalar Dependencias de Composer</h3>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <p><strong>Para que el parser YAML funcione correctamente, necesitas instalar las dependencias de Composer:</strong></p>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <h4>Opción 1: SSH/Terminal (Recomendado)</h4>
+                                        <p>Accede a tu servidor vía SSH y ejecuta:</p>
+                                        <pre style="background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
+cd /ruta/a/tu/sitio/wp-content/plugins/wac-chat-funnels/
+composer install --no-dev --optimize-autoloader</pre>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <h4>Opción 2: Panel de Control</h4>
+                                        <p>Si tu hosting tiene un panel de control con terminal:</p>
+                                        <ol>
+                                            <li>Ve al terminal del panel de control</li>
+                                            <li>Navega al directorio del plugin</li>
+                                            <li>Ejecuta: <code>composer install --no-dev --optimize-autoloader</code></li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <h4>Opción 3: Subir vendor/ manualmente</h4>
+                                        <p>Si no tienes acceso a Composer:</p>
+                                        <ol>
+                                            <li>Descarga el plugin completo desde GitHub</li>
+                                            <li>Incluye la carpeta <code>vendor/</code></li>
+                                            <li>Sube todo al servidor</li>
+                                        </ol>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <h4>Verificación</h4>
+                                        <p>Después de instalar, haz clic en "🧪 Test Parser" para verificar que funciona.</p>
+                                    </div>
+                                    
+                                    <div style="margin-top: 15px;">
+                                        <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar</button>
+                                        <button onclick="document.getElementById('test-parser-btn').click();" class="button">🧪 Test Parser</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
                     });
                 }
             
