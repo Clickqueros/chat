@@ -130,20 +130,40 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
     }
     
     private static function simple_yaml_parse($yaml_string) {
-        // Parser YAML simple para nuestro caso específico
+        // Parser YAML mejorado para nuestro caso específico
         $lines = explode("\n", $yaml_string);
         $result = array();
         $current_path = array();
         $current_node = '';
+        $in_multiline_text = false;
+        $multiline_content = '';
         
-        foreach ($lines as $line) {
+        foreach ($lines as $line_num => $line) {
+            $original_line = $line;
             $trimmed = trim($line);
+            
+            // Saltar líneas vacías y comentarios
             if (empty($trimmed) || strpos($trimmed, '#') === 0) {
                 continue;
             }
             
+            // Manejar texto multilínea
+            if ($in_multiline_text) {
+                if (strpos($trimmed, ':') !== false && !strpos($trimmed, '|') !== false) {
+                    // Fin del texto multilínea
+                    $in_multiline_text = false;
+                    $result['funnel']['nodes'][$current_node]['text'] = trim($multiline_content);
+                    $multiline_content = '';
+                    // Continuar procesando esta línea
+                } else {
+                    // Agregar línea al contenido multilínea
+                    $multiline_content .= $line . "\n";
+                    continue;
+                }
+            }
+            
             $indent = strlen($line) - strlen(ltrim($line));
-            $path_level = $indent / 2;
+            $path_level = floor($indent / 2);
             
             if (strpos($trimmed, ':') !== false) {
                 list($key, $value) = explode(':', $trimmed, 2);
@@ -167,13 +187,19 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
                         $current_path[] = 'nodes';
                         $result['funnel']['nodes'] = array();
                     }
-                } else if ($path_level === 2 && end($current_path) === 'nodes') {
+                } else if ($path_level === 2) {
                     // Nivel nodos
                     if (empty($value)) {
                         $current_node = $key;
                         $result['funnel']['nodes'][$current_node] = array();
                     } else {
-                        $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                        // Verificar si es texto multilínea
+                        if (strpos($value, '|') !== false) {
+                            $in_multiline_text = true;
+                            $multiline_content = '';
+                        } else {
+                            $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                        }
                     }
                 } else if ($path_level === 3) {
                     // Nivel propiedades de nodos
@@ -190,11 +216,33 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
                             }
                         }
                     } else {
-                        $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                        // Verificar si es texto multilínea
+                        if (strpos($value, '|') !== false) {
+                            $in_multiline_text = true;
+                            $multiline_content = '';
+                        } else {
+                            $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                        }
+                    }
+                } else if ($path_level === 4) {
+                    // Nivel de opciones individuales
+                    if (isset($result['funnel']['nodes'][$current_node]['options'])) {
+                        $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
+                        if ($last_index >= 0) {
+                            $result['funnel']['nodes'][$current_node]['options'][$last_index][$key] = trim($value, '"\'');
+                        }
                     }
                 }
             }
         }
+        
+        // Procesar último texto multilínea si existe
+        if ($in_multiline_text && !empty($multiline_content)) {
+            $result['funnel']['nodes'][$current_node]['text'] = trim($multiline_content);
+        }
+        
+        // Debug: Log del resultado parseado
+        error_log('WAC Chat Funnels - Parsed YAML: ' . print_r($result, true));
         
         return $result;
     }
@@ -250,9 +298,13 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
     private static function validate_funnel_structure($parsed) {
         $errors = array();
         
+        // Debug: Log de lo que se está validando
+        error_log('WAC Chat Funnels - Validating structure: ' . print_r($parsed, true));
+        
         // Verificar estructura básica
         if (!isset($parsed['funnel'])) {
             $errors[] = __('Falta la clave "funnel" en la raíz', 'wac-chat-funnels');
+            error_log('WAC Chat Funnels - Missing funnel key. Parsed structure: ' . print_r($parsed, true));
             return array('valid' => false, 'message' => __('Estructura inválida', 'wac-chat-funnels'), 'errors' => $errors);
         }
         
@@ -292,9 +344,12 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
             }
         }
         
+        $is_valid = empty($errors);
+        error_log('WAC Chat Funnels - Validation result: ' . ($is_valid ? 'VALID' : 'INVALID') . '. Errors: ' . print_r($errors, true));
+        
         return array(
-            'valid' => empty($errors),
-            'message' => empty($errors) ? __('YAML válido', 'wac-chat-funnels') : __('YAML tiene errores', 'wac-chat-funnels'),
+            'valid' => $is_valid,
+            'message' => $is_valid ? __('YAML válido', 'wac-chat-funnels') : __('YAML tiene errores', 'wac-chat-funnels'),
             'errors' => $errors
         );
     }
