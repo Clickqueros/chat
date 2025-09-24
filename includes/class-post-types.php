@@ -90,15 +90,16 @@ class WAC_Chat_Post_Types {
         }
         
         ?>
-        <div id="wac-funnel-editor">
-            <div style="margin-bottom: 10px; padding: 10px; background: #f0f0f1; border-radius: 4px;">
-                <button type="button" id="debug-test-btn" class="button">🔍 Test Debug</button>
-                <button type="button" id="load-example-btn" class="button">📝 Load Example</button>
-                <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
+            <div id="wac-funnel-editor">
+                <div style="margin-bottom: 10px; padding: 10px; background: #f0f0f1; border-radius: 4px;">
+                    <button type="button" id="debug-test-btn" class="button">🔍 Test Debug</button>
+                    <button type="button" id="load-example-btn" class="button">📝 Load Example</button>
+                    <button type="button" id="force-debug-btn" class="button" style="background: #0073aa; color: white;">🚨 Force Debug</button>
+                    <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
+                </div>
+                <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
+                <textarea id="wac-funnel-config" name="wac_funnel_config" style="display: none;"><?php echo esc_textarea($config); ?></textarea>
             </div>
-            <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
-            <textarea id="wac-funnel-config" name="wac_funnel_config" style="display: none;"><?php echo esc_textarea($config); ?></textarea>
-        </div>
         
         <script>
         console.log('🐛 WAC Chat Funnels: Metabox script loaded');
@@ -190,20 +191,91 @@ class WAC_Chat_Post_Types {
                 });
             }
             
-            // Check if main script is loaded
-            setTimeout(function() {
-                if (typeof WACAdminEditor !== 'undefined') {
-                    console.log('✅ WACAdminEditor class is available');
-                } else {
-                    console.log('❌ WACAdminEditor class is NOT available');
+                // Force Debug button
+                const forceDebugBtn = document.getElementById('force-debug-btn');
+                if (forceDebugBtn) {
+                    forceDebugBtn.addEventListener('click', function() {
+                        console.log('🚨 Force Debug Button Clicked');
+                        
+                        // Get current YAML
+                        const yamlEditor = document.getElementById('yaml-content');
+                        const yaml = yamlEditor ? yamlEditor.value : '';
+                        
+                        // Get preview container
+                        const previewContainer = document.getElementById('wac-chat-preview');
+                        
+                        if (previewContainer) {
+                            // Show debug info in preview
+                            previewContainer.innerHTML = `
+                                <div style="padding:16px;background:#f0f8ff;border:1px solid #b3d9ff;border-radius:6px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #0066cc;">🚨 Force Debug YAML</h3>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>YAML Info:</strong><br>
+                                        • Longitud: ${yaml.length} caracteres<br>
+                                        • Líneas: ${yaml.split('\n').length}<br>
+                                        • ¿Contiene 'funnel:'? ${yaml.includes('funnel:') ? '✅ Sí' : '❌ No'}<br>
+                                        • Posición de 'funnel:': ${yaml.indexOf('funnel:')}<br>
+                                        • ¿Contiene 'Funnel:'? ${yaml.includes('Funnel:') ? '✅ Sí' : '❌ No'}<br>
+                                    </div>
+
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Primeras líneas:</strong><br>
+                                        <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
+1: ${yaml.split('\n')[0] || '(vacío)'}
+2: ${yaml.split('\n')[1] || '(vacío)'}
+3: ${yaml.split('\n')[2] || '(vacío)'}
+4: ${yaml.split('\n')[3] || '(vacío)'}
+5: ${yaml.split('\n')[4] || '(vacío)'}
+                                        </pre>
+                                    </div>
+
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>YAML Completo:</strong><br>
+                                        <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">${yaml}</textarea>
+                                    </div>
+
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>JavaScript Status:</strong><br>
+                                        • WACAdminEditor: ${typeof WACAdminEditor !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
+                                        • wacChatAdmin: ${typeof wacChatAdmin !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
+                                        • window.wacChatAdmin: ${typeof window.wacChatAdmin !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
+                                    </div>
+
+                                    <div style="margin-top: 15px;">
+                                        <button onclick="document.getElementById('wac-chat-preview').innerHTML=''; this.updatePreview();" class="button">Cerrar Debug</button>
+                                        <button onclick="navigator.clipboard.writeText('${yaml.replace(/'/g, "\\'")}'); alert('YAML copiado');" class="button">Copiar YAML</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Log to console
+                        console.group('🚨 Force Debug YAML');
+                        console.log('YAML Content:', yaml);
+                        console.log('YAML Length:', yaml.length);
+                        console.log('Has funnel:', yaml.includes('funnel:'));
+                        console.log('Has Funnel:', yaml.includes('Funnel:'));
+                        console.log('Funnel position:', yaml.indexOf('funnel:'));
+                        console.log('First 5 lines:', yaml.split('\n').slice(0, 5));
+                        console.groupEnd();
+                    });
                 }
                 
-                if (typeof wacChatAdmin !== 'undefined') {
-                    console.log('✅ wacChatAdmin object is available:', wacChatAdmin);
-                } else {
-                    console.log('❌ wacChatAdmin object is NOT available');
-                }
-            }, 1000);
+                // Check if main script is loaded
+                setTimeout(function() {
+                    if (typeof WACAdminEditor !== 'undefined') {
+                        console.log('✅ WACAdminEditor class is available');
+                    } else {
+                        console.log('❌ WACAdminEditor class is NOT available');
+                    }
+                    
+                    if (typeof wacChatAdmin !== 'undefined') {
+                        console.log('✅ wacChatAdmin object is available:', wacChatAdmin);
+                    } else {
+                        console.log('❌ wacChatAdmin object is NOT available');
+                    }
+                }, 1000);
         });
         </script>
         
