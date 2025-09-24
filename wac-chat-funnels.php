@@ -265,7 +265,12 @@ class WAC_Chat_Funnels {
             <div class="wac-builder-actions">
                 <button type="button" class="button button-primary" onclick="addNewStep()">+ Agregar Paso</button>
                 <button type="button" class="button" onclick="previewFunnel()">👁️ Vista Previa</button>
+                <button type="button" class="button button-secondary" onclick="saveFunnelConfig()">💾 Guardar Funnel</button>
                 <button type="button" class="button" onclick="resetToDefault()">🔄 Restaurar Por Defecto</button>
+            </div>
+            
+            <div class="wac-save-notice" id="wac-save-notice" style="display:none;">
+                <p>✅ <strong>Funnel guardado!</strong> Los cambios se aplicarán cuando actualices el post.</p>
             </div>
         </div>
         
@@ -280,6 +285,9 @@ class WAC_Chat_Funnels {
                 </div>
             </div>
         </div>
+        
+        <!-- Campos ocultos para guardar la configuración del funnel -->
+        <input type="hidden" name="wac_funnel_steps" id="wac-funnel-steps-hidden" value="" />
         
         <style>
         #wac-funnel-builder {
@@ -373,6 +381,26 @@ class WAC_Chat_Funnels {
         
         .wac-builder-actions button {
             margin-right: 10px;
+        }
+        
+        .button-secondary {
+            background-color: #25D366 !important;
+            border-color: #25D366 !important;
+            color: white !important;
+        }
+        
+        .button-secondary:hover {
+            background-color: #1da851 !important;
+            border-color: #1da851 !important;
+        }
+        
+        .wac-save-notice {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
         }
         
         #wac-preview-modal {
@@ -521,6 +549,77 @@ class WAC_Chat_Funnels {
             }
         }
         
+        function saveFunnelConfig() {
+            // Recopilar todos los datos del editor
+            const funnelData = collectFunnelData();
+            
+            // Guardar en campo oculto
+            document.getElementById('wac-funnel-steps-hidden').value = JSON.stringify(funnelData);
+            
+            // Mostrar notificación visual
+            const notice = document.getElementById('wac-save-notice');
+            if (notice) {
+                notice.style.display = 'block';
+                notice.style.background = '#d4edda';
+                notice.style.color = '#155724';
+                notice.style.border = '1px solid #c3e6cb';
+                notice.style.padding = '10px';
+                notice.style.borderRadius = '4px';
+                notice.style.margin = '10px 0';
+                
+                // Ocultar después de 3 segundos
+                setTimeout(() => {
+                    notice.style.display = 'none';
+                }, 3000);
+            }
+            
+            console.log('Funnel data saved:', funnelData);
+        }
+        
+        function collectFunnelData() {
+            const steps = {};
+            const stepsContainer = document.getElementById('wac-steps-container');
+            
+            // Recopilar datos de cada paso
+            stepsContainer.querySelectorAll('.wac-step').forEach(step => {
+                const stepNumber = step.getAttribute('data-step');
+                const stepData = {};
+                
+                // Recopilar campos del paso
+                step.querySelectorAll('input, select, textarea').forEach(field => {
+                    if (field.name) {
+                        if (field.type === 'checkbox') {
+                            stepData[field.name] = field.checked;
+                        } else {
+                            stepData[field.name] = field.value;
+                        }
+                    }
+                });
+                
+                steps[stepNumber] = stepData;
+            });
+            
+            return steps;
+        }
+        
+        function loadFunnelConfig() {
+            // Esta función cargaría la configuración guardada
+            // Por ahora solo muestra un mensaje
+            alert('🔄 Funcionalidad de carga en desarrollo. Los cambios se guardan automáticamente al actualizar el post.');
+        }
+        
+        // Auto-guardar cada vez que se hace un cambio
+        document.addEventListener('DOMContentLoaded', function() {
+            const editorContainer = document.getElementById('wac-funnel-builder');
+            if (editorContainer) {
+                editorContainer.addEventListener('input', function() {
+                    // Auto-guardar cada 2 segundos después del último cambio
+                    clearTimeout(window.autoSaveTimeout);
+                    window.autoSaveTimeout = setTimeout(saveFunnelConfig, 2000);
+                });
+            }
+        });
+        
         // Manejar cambios en selects de acción
         document.addEventListener('change', function(e) {
             if (e.target.name && e.target.name.includes('_action')) {
@@ -544,10 +643,37 @@ class WAC_Chat_Funnels {
         }
         
         if (isset($_POST['wac_funnel_config_nonce']) && wp_verify_nonce($_POST['wac_funnel_config_nonce'], 'wac_funnel_config')) {
+            // Guardar configuración básica
             update_post_meta($post_id, '_wac_funnel_enabled', isset($_POST['wac_funnel_enabled']) ? '1' : '0');
             update_post_meta($post_id, '_wac_funnel_teaser_text', sanitize_text_field($_POST['wac_funnel_teaser_text']));
             update_post_meta($post_id, '_wac_funnel_teaser_delay', intval($_POST['wac_funnel_teaser_delay']));
             update_post_meta($post_id, '_wac_funnel_whatsapp_number', sanitize_text_field($_POST['wac_funnel_whatsapp_number']));
+            
+            // Guardar configuración del funnel (pasos)
+            if (isset($_POST['wac_funnel_steps'])) {
+                $funnel_steps = json_decode(stripslashes($_POST['wac_funnel_steps']), true);
+                if ($funnel_steps) {
+                    update_post_meta($post_id, '_wac_funnel_steps', $funnel_steps);
+                }
+            }
+            
+            // Guardar configuración individual de pasos
+            $this->save_funnel_steps($post_id);
+        }
+    }
+    
+    private function save_funnel_steps($post_id) {
+        $steps_data = array();
+        
+        // Recopilar todos los datos de los pasos
+        foreach ($_POST as $key => $value) {
+            if (strpos($key, 'step_') === 0) {
+                $steps_data[$key] = sanitize_text_field($value);
+            }
+        }
+        
+        if (!empty($steps_data)) {
+            update_post_meta($post_id, '_wac_funnel_steps_data', $steps_data);
         }
     }
     
