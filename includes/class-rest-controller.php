@@ -93,7 +93,11 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
     }
     
     public function validate_yaml($request) {
-        $yaml_content = $request->get_param('yaml');
+        // Leer desde JSON params (más seguro y consistente)
+        $json = $request->get_json_params();
+        $yaml_content = isset($json['yaml']) && is_string($json['yaml']) ? $json['yaml'] : '';
+        $yaml_content = wp_unslash($yaml_content);
+        $yaml_content = str_replace(["\r\n","\r"], "\n", $yaml_content);
         
         if (empty($yaml_content)) {
             return rest_ensure_response(array(
@@ -244,7 +248,11 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
     }
     
     public function preview_funnel($request) {
-        $yaml_content = $request->get_param('yaml');
+        // Leer desde JSON params (más seguro y consistente)
+        $json = $request->get_json_params();
+        $yaml_content = isset($json['yaml']) && is_string($json['yaml']) ? $json['yaml'] : '';
+        $yaml_content = wp_unslash($yaml_content);
+        $yaml_content = str_replace(["\r\n","\r"], "\n", $yaml_content);
         
         if (empty($yaml_content)) {
             return rest_ensure_response(array(

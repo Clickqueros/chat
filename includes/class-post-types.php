@@ -429,7 +429,11 @@ class WAC_Chat_Post_Types {
         
         // Guardar configuración del funnel
         if (isset($_POST['wac_funnel_config_nonce']) && wp_verify_nonce($_POST['wac_funnel_config_nonce'], 'wac_funnel_config')) {
-            update_post_meta($post_id, '_wac_funnel_config', sanitize_textarea_field($_POST['wac_funnel_config']));
+            if (isset($_POST['wac_funnel_config'])) {
+                $raw = wp_unslash($_POST['wac_funnel_config']);          // respeta saltos de línea
+                // NO uses sanitize_textarea_field: rompe la indentación del YAML
+                update_post_meta($post_id, '_wac_funnel_config', $raw);
+            }
         }
         
         // Guardar reglas

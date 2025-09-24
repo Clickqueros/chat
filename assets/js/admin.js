@@ -1,146 +1,134 @@
 /**
- * WAC Chat Funnels Admin Interface
- * Editor YAML con preview en vivo - Versión Robusta
+ * WAC Chat Funnels Admin Interface (patched)
+ * - Usa #wac-yaml-editor como editor visible (contenteditable)
+ * - Sincroniza con #wac-funnel-config (hidden)
+ * - Llama /wac-chat/v1/validate-yaml con wacChatAdmin.apiUrl + apiNonce
  */
 
 (() => {
   'use strict';
 
-  // === UTILIDADES ROBUSTAS PARA LEER/ESCRIBIR YAML ===
-  function getYamlEl() {
-    return document.querySelector('#yaml-content, #wac-funnel-yaml, [data-wac-yaml], textarea[name="wac_funnel_yaml"]');
-  }
-  
-  function getHiddenEl() {
-    return document.getElementById('wac-funnel-config') || document.querySelector('[name="wac_funnel_config"]');
-  }
-  
-  function getCodeMirror() {
-    const cmHost = document.querySelector('.CodeMirror');
-    return cmHost && cmHost.CodeMirror ? cmHost.CodeMirror : null;
-  }
-  
-  function getMonacoEditor() {
+  // ==== Utils ====
+  const escapeHTML = (s) =>
+    String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const debounce = (fn, t=300) => { let id; return (...a)=>{ clearTimeout(id); id=setTimeout(()=>fn(...a),t); }; };
+
+  // Selectores que realmente existen en tu metabox
+  const getVisibleEditor = () => document.getElementById('wac-yaml-editor');     // <div> visible
+  const getHiddenField   = () => document.getElementById('wac-funnel-config');    // <textarea hidden>
+
+  // Intenta enganchar CodeMirror/Monaco si los agregas en el futuro
+  const getCodeMirror = () => {
+    const host = document.querySelector('.CodeMirror');
+    return host && host.CodeMirror ? host.CodeMirror : null;
+  };
+  const getMonaco = () => {
     if (window.wacMonacoEditor && typeof wacMonacoEditor.getValue === 'function') return window.wacMonacoEditor;
-    if (window.monaco && monaco.editor) {
-      const models = monaco.editor.getModels?.() || [];
+    if (window.monaco?.editor) {
       const editors = monaco.editor.getEditors?.() || [];
-      // Prioriza instancia si existe, si no toma el primer modelo
+      const models  = monaco.editor.getModels?.() || [];
       if (editors[0]) return editors[0];
-      if (models[0]) return {
-        getValue: () => models[0].getValue(),
-        setValue: (v) => models[0].setValue(v),
-        onDidChangeModelContent: (fn) => models[0].onDidChangeContent?.(fn)
-      };
+      if (models[0]) {
+        return {
+          getValue: () => models[0].getValue(),
+          setValue: (v) => models[0].setValue(v),
+          onDidChangeModelContent: (fn) => models[0].onDidChangeContent?.(fn)
+        };
+      }
     }
     return null;
-  }
-  
-  function readYAML() {
-    // 1) CodeMirror
-    const cm = getCodeMirror();
-    if (cm) {
-      const v = cm.getValue();
-      if (v && v.trim()) return v;
-    }
-    // 2) Monaco
-    const me = getMonacoEditor();
-    if (me && typeof me.getValue === 'function') {
-      const v = me.getValue();
-      if (v && v.trim()) return v;
-    }
-    // 3) Textarea / contenteditable
-    const el = getYamlEl();
-    if (el) {
-      let v = typeof el.value === 'string' ? el.value : '';
-      if (!v || !v.trim()) {
-        if (el.getAttribute('contenteditable') === 'true') v = el.textContent || '';
-        else v = el.textContent && !el.value ? el.textContent : v;
-      }
-      if (v && v.trim()) return v;
-    }
-    // 4) Hidden
-    const hidden = getHiddenEl();
-    if (hidden && typeof hidden.value === 'string' && hidden.value.trim()) return hidden.value;
-
-    return '';
-  }
-  
-  function writeYAML(v) {
-    // 1) CodeMirror
-    const cm = getCodeMirror();
-    if (cm) { cm.setValue(v); return; }
-    // 2) Monaco
-    const me = getMonacoEditor();
-    if (me && typeof me.setValue === 'function') { me.setValue(v); return; }
-    // 3) Textarea / contenteditable
-    const el = getYamlEl();
-    if (el) {
-      if (typeof el.value === 'string') el.value = v;
-      else if (el.getAttribute('contenteditable') === 'true') el.textContent = v;
-      else el.textContent = v;
-    }
-    // 4) Hidden espejo
-    const hidden = getHiddenEl();
-    if (hidden && typeof hidden.value === 'string') hidden.value = v;
-  }
-  
-  function hookExternalEditors(onChange) {
-    const cm = getCodeMirror();
-    if (cm) cm.on('change', onChange);
-    const me = getMonacoEditor();
-    if (me && typeof me.onDidChangeModelContent === 'function') me.onDidChangeModelContent(onChange);
-  }
-
-  // Utils
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (s) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[s]));
-  
-  const debounce = (fn, wait = 300) => {
-    let t;
-    return (...args) => {
-      clearTimeout(t);
-      t = setTimeout(() => fn.apply(null, args), wait);
-    };
   };
 
-  // Clase principal del editor
+  // Lectura robusta del YAML desde editor visible / CM / Monaco / hidden
+  function readYAML() {
+    const cm = getCodeMirror();
+    if (cm) {
+      const v = cm.getValue(); if (v?.trim()) return v;
+    }
+    const me = getMonaco();
+    if (me && typeof me.getValue === 'function') {
+      const v = me.getValue(); if (v?.trim()) return v;
+    }
+    const el = getVisibleEditor();
+    if (el) {
+      // El div será contenteditable; usamos textContent
+      const v = el.textContent ?? '';
+      if (v.trim()) return v;
+    }
+    const hidden = getHiddenField();
+    if (hidden && typeof hidden.value === 'string' && hidden.value.trim()) return hidden.value;
+    return '';
+  }
+
+  function writeYAML(v) {
+    // Limpia "undefined" o "null" que pudieran venir del pasado
+    if (v === 'undefined' || v === 'null') v = '';
+    const cm = getCodeMirror();
+    if (cm) { cm.setValue(v); }
+    const me = getMonaco();
+    if (me && typeof me.setValue === 'function') { me.setValue(v); }
+    const el = getVisibleEditor();
+    if (el) {
+      // Mostramos como texto preformateado
+      el.textContent = v;
+    }
+    const hidden = getHiddenField();
+    if (hidden) hidden.value = v;
+  }
+
+  // ==== Clase principal ====
   class WACAdminEditor {
     constructor() {
-      this.previewContainer = document.getElementById('wac-chat-preview')
-        || document.getElementById('wac-preview')
-        || document.getElementById('wac-preview-pane')
-        || document.querySelector('.wac-preview');
+      this.preview = document.getElementById('wac-chat-preview')
+                 || document.getElementById('wac-preview')
+                 || document.getElementById('wac-preview-pane')
+                 || document.querySelector('.wac-preview');
 
-      this.btnLoad = document.getElementById('wac-load-example') || document.querySelector('[data-wac="load-example"]');
-      this.btnDebug = document.getElementById('wac-test-debug') || document.querySelector('[data-wac="test-debug"]');
-
-      // Valor inicial seguro (evita "undefined/null")
-      const hidden = getHiddenEl();
-      let initial = hidden && typeof hidden.value === 'string' ? hidden.value : '';
-      if (initial.trim() === 'undefined' || initial.trim() === 'null') initial = '';
-      if (initial) writeYAML(initial);
-
-      // Listeners
-      const yamlEl = getYamlEl();
-      if (yamlEl) {
-        const onUiChange = () => {
-          const v = readYAML();
-          if (hidden) hidden.value = v;
-          this.debouncedPreview();
-        };
-        yamlEl.addEventListener('input', onUiChange);
-        yamlEl.addEventListener('keyup', onUiChange);
+      // Asegurar editor visible como contenteditable (si no hay CodeMirror/Monaco)
+      const vis = getVisibleEditor();
+      if (vis && vis.getAttribute('contenteditable') !== 'true') {
+        vis.setAttribute('contenteditable', 'true');
+        vis.style.whiteSpace = 'pre';       // que respete saltos
+        vis.style.fontFamily = 'Menlo,Consolas,monospace';
+        vis.style.padding = '8px';
       }
-      hookExternalEditors(() => {
+
+      // Inicial: carga desde hidden
+      const hidden = getHiddenField();
+      let initial = hidden && typeof hidden.value === 'string' ? hidden.value : '';
+      if (initial === 'undefined' || initial === 'null') initial = '';
+      writeYAML(initial);
+
+      // Hooks de cambio
+      const onUiChange = () => {
         const v = readYAML();
         if (hidden) hidden.value = v;
         this.debouncedPreview();
-      });
+      };
 
-      if (this.btnLoad) this.btnLoad.addEventListener('click', () => this.loadExample());
-      if (this.btnDebug) this.btnDebug.addEventListener('click', () => this.testDebug());
+      // Cambios en div contenteditable
+      if (vis) {
+        vis.addEventListener('input', onUiChange);
+        vis.addEventListener('keyup', onUiChange);
+        vis.addEventListener('paste', (e) => setTimeout(onUiChange, 0));
+      }
 
+      // Cambios en CM/Monaco
+      const cm = getCodeMirror();
+      if (cm) cm.on('change', onUiChange);
+      const me = getMonaco();
+      if (me?.onDidChangeModelContent) me.onDidChangeModelContent(onUiChange);
+
+      // Botones debug opcionales (si existen en tu plantilla)
+      const btnLoad  = document.getElementById('load-example-btn');
+      const btnClear = document.getElementById('clear-editor-btn');
+      const btnForce = document.getElementById('force-debug-btn');
+
+      if (btnLoad)  btnLoad.addEventListener('click', () => this.loadExample());
+      if (btnClear) btnClear.addEventListener('click', () => { writeYAML(''); this.updatePreview(); });
+      if (btnForce) btnForce.addEventListener('click', () => this.forceDebug());
+
+      // Pintar por primera vez
       this.updatePreview();
     }
 
@@ -148,83 +136,70 @@
 
     async updatePreview() {
       const yaml = readYAML();
-      // espejo al hidden por si guardas el post
-      const hidden = getHiddenEl();
+      // espejo al hidden (para que guardes el post con lo que ves)
+      const hidden = getHiddenField();
       if (hidden) hidden.value = yaml;
 
       if (!yaml.trim()) {
-        return this.renderInfo('Pega un YAML para ver la vista previa.');
+        return this.renderInfo('Pega o escribe tu YAML a la izquierda para ver la vista previa.');
       }
-
       const res = await this.validateYAML(yaml);
       if (!res.valid) return this.renderError(res);
       this.renderSuccess(res);
     }
 
     async validateYAML(yaml) {
-      const url = (window.wacChatAdmin && (wacChatAdmin.rest_url)) 
-        ? wacChatAdmin.rest_url + 'validate-yaml'
-        : '/wp-json/wac-chat/v1/validate-yaml';
-
+      // Usa los nombres que SÍ localizas en tu plugin: apiUrl + apiNonce
+      const base = (window.wacChatAdmin && (wacChatAdmin.apiUrl || wacChatAdmin.rest_url)) || '/wp-json/wac-chat/v1/';
+      const url  = base.replace(/\/+$/,'/') + 'validate-yaml';
       const headers = { 'Content-Type': 'application/json' };
-      if (window.wacChatAdmin && wacChatAdmin.nonce) {
-        headers['X-WP-Nonce'] = wacChatAdmin.nonce;
+      if (window.wacChatAdmin && (wacChatAdmin.apiNonce || wacChatAdmin.nonce)) {
+        headers['X-WP-Nonce'] = wacChatAdmin.apiNonce || wacChatAdmin.nonce;
       }
 
-      let raw;
       try {
         const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ yaml }) });
-        raw = await r.json();
+        const raw = await r.json();
+
+        let errs = [];
+        if (Array.isArray(raw?.errors)) errs = raw.errors;
+        else if (Array.isArray(raw?.data?.errors)) errs = raw.data.errors;
+        else if (raw?.errors && typeof raw.errors === 'object') errs = Object.values(raw.errors).flat();
+        else if (!raw.valid && typeof raw.message === 'string') errs = [raw.message];
+
+        return { valid: !!raw.valid, message: raw.message || '', errors: errs, config: raw.config || null, preview: raw.preview || null };
       } catch (e) {
         return { valid: false, message: 'No se pudo contactar el validador.', errors: [e.message] };
       }
-
-      let errs = [];
-      if (Array.isArray(raw?.errors)) errs = raw.errors;
-      else if (Array.isArray(raw?.data?.errors)) errs = raw.data.errors;
-      else if (raw?.errors && typeof raw.errors === 'object') errs = Object.values(raw.errors).flat();
-      else if (!raw.valid && typeof raw.message === 'string') errs = [raw.message];
-
-      return { valid: !!raw.valid, message: raw.message || '', errors: errs, config: raw.config || null, preview: raw.preview || null };
     }
 
     renderInfo(msg) {
-      if (!this.previewContainer) return;
-      this.previewContainer.innerHTML = `<div style="padding:12px;background:#f6f7f7;border-radius:6px;color:#555;">${escapeHTML(String(msg))}</div>`;
+      if (!this.preview) return;
+      this.preview.innerHTML = `<div style="padding:12px;background:#f6f7f7;border-radius:6px;color:#555;">${escapeHTML(msg)}</div>`;
     }
 
     renderError(result) {
+      if (!this.preview) return;
       const list = Array.isArray(result.errors) ? result.errors : (result.errors ? [String(result.errors)] : []);
       const html = list.length ? list.map(escapeHTML).join('<br>') : escapeHTML(result.message || 'Error desconocido');
-      if (!this.previewContainer) return;
-      this.previewContainer.innerHTML = `
+      this.preview.innerHTML = `
         <div style="padding:16px;color:#d63638;background:#fcf0f1;border:1px solid #f5c2c7;border-radius:6px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <strong>Error en YAML:</strong>
-            <button id="debug-error-btn" type="button" class="button button-small" style="margin-left: 10px;">
-              🔍 Debug Error
-            </button>
+          <strong>Error en YAML:</strong><br>${html}
+          <div style="margin-top:8px;">
+            <button id="debug-error-btn" type="button" class="button">🔎 Detalles</button>
           </div>
-          <div>${html}</div>
         </div>`;
-      
-      // Agregar listener al botón de debug de error
-      const debugErrorBtn = document.getElementById('debug-error-btn');
-      if (debugErrorBtn) {
-        debugErrorBtn.addEventListener('click', () => {
-          this.debugYAMLError(result);
-        });
-      }
+      const btn = document.getElementById('debug-error-btn');
+      if (btn) btn.addEventListener('click', () => this.forceDebug());
     }
 
     renderSuccess(result) {
-      if (!this.previewContainer) return;
+      if (!this.preview) return;
       if (result.preview && typeof result.preview === 'string') {
-        this.previewContainer.innerHTML = result.preview;
-        return;
+        this.preview.innerHTML = result.preview; return;
       }
       const pretty = escapeHTML(JSON.stringify(result.config, null, 2));
-      this.previewContainer.innerHTML = `
+      this.preview.innerHTML = `
         <div style="padding:12px;background:#f6fff6;border:1px solid #b7ebc6;border-radius:6px;">
           <strong>YAML válido.</strong>
           <pre style="white-space:pre-wrap;margin:8px 0 0;font-size:12px;">${pretty}</pre>
@@ -281,123 +256,40 @@
       action:
         type: event
         name: "lead_capturado"`;
-      
       writeYAML(example);
-      const hidden = getHiddenEl();
-      if (hidden) hidden.value = example;
       this.updatePreview();
     }
 
-    testDebug() {
+    forceDebug() {
       const yaml = readYAML();
-      console.log('🚨 Force Debug YAML');
-      console.log('len:', yaml.length, 'first 60:', yaml.slice(0, 60).replace(/\n/g,'⏎'));
-      alert(
-`🚨 Force Debug YAML
-Longitud: ${yaml.length}
-Primeras líneas:
-${yaml.split('\n').slice(0,5).map((l,i)=>`${i+1}: ${l||'(vacío)'}`).join('\n')}`
-      );
-    }
+      const lines = (yaml || '').split('\n');
+      const info = [
+        `YAML Info:`,
+        `• Longitud: ${yaml.length} caracteres`,
+        `• Líneas: ${lines.length}`,
+        `• ¿Contiene 'funnel:'? ${yaml.includes('funnel:') ? '✅ Sí' : '❌ No'}`,
+        `• Posición de 'funnel:': ${yaml.indexOf('funnel:')}`,
+        `• ¿Contiene 'Funnel:'? ${yaml.includes('Funnel:') ? '✅ Sí' : '❌ No'}`,
+        ``,
+        `Primeras líneas:`,
+        `1: ${escapeHTML(lines[0] || '(vacío)')}`,
+        `2: ${escapeHTML(lines[1] || '(vacío)')}`,
+        `3: ${escapeHTML(lines[2] || '(vacío)')}`,
+        ``,
+        `YAML Completo:`,
+        escapeHTML(yaml || '(vacío)'),
+      ].join('\n');
 
-    debugYAMLError(errorResult) {
-      const yaml = readYAML();
-      
-      // Información detallada del error
-      const debugInfo = {
-        timestamp: new Date().toISOString(),
-        yamlLength: yaml.length,
-        yamlFirstChars: yaml.substring(0, 100),
-        yamlLastChars: yaml.substring(Math.max(0, yaml.length - 100)),
-        errorResult: errorResult,
-        hasFunnelKey: yaml.includes('funnel:'),
-        funnelKeyPosition: yaml.indexOf('funnel:'),
-        lines: yaml.split('\n').length,
-        firstLine: yaml.split('\n')[0],
-        secondLine: yaml.split('\n')[1],
-        thirdLine: yaml.split('\n')[2]
-      };
-
-      // Mostrar información en el preview
-      if (this.previewContainer) {
-        this.previewContainer.innerHTML = `
-          <div style="padding:16px;background:#f0f8ff;border:1px solid #b3d9ff;border-radius:6px;">
-            <h3 style="margin: 0 0 15px 0; color: #0066cc;">🔍 Debug YAML Error</h3>
-            
-            <div style="margin-bottom: 10px;">
-              <strong>YAML Info:</strong><br>
-              • Longitud: ${debugInfo.yamlLength} caracteres<br>
-              • Líneas: ${debugInfo.lines}<br>
-              • ¿Contiene 'funnel:'? ${debugInfo.hasFunnelKey ? '✅ Sí' : '❌ No'}<br>
-              ${debugInfo.funnelKeyPosition >= 0 ? `• Posición de 'funnel:': ${debugInfo.funnelKeyPosition}` : ''}
-            </div>
-
-            <div style="margin-bottom: 10px;">
-              <strong>Primeras líneas:</strong><br>
-              <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
-1: ${escapeHTML(debugInfo.firstLine)}
-2: ${escapeHTML(debugInfo.secondLine)}
-3: ${escapeHTML(debugInfo.thirdLine)}
-              </pre>
-            </div>
-
-            <div style="margin-bottom: 10px;">
-              <strong>Error Details:</strong><br>
-              <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
-${escapeHTML(JSON.stringify(errorResult, null, 2))}
-              </pre>
-            </div>
-
-            <div style="margin-bottom: 10px;">
-              <strong>YAML Completo:</strong><br>
-              <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">${escapeHTML(yaml)}</textarea>
-            </div>
-
-            <div style="margin-top: 15px;">
-              <button id="close-debug-btn" type="button" class="button">Cerrar Debug</button>
-              <button id="copy-yaml-btn" type="button" class="button">Copiar YAML</button>
-            </div>
-          </div>
-        `;
-
-        // Agregar listeners a los botones
-        const closeBtn = document.getElementById('close-debug-btn');
-        if (closeBtn) {
-          closeBtn.addEventListener('click', () => {
-            this.updatePreview();
-          });
-        }
-
-        const copyBtn = document.getElementById('copy-yaml-btn');
-        if (copyBtn) {
-          copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(yaml).then(() => {
-              alert('YAML copiado al portapapeles');
-            }).catch(() => {
-              alert('Error al copiar. Revisa la consola para el YAML completo.');
-            });
-          });
-        }
+      if (this.preview) {
+        this.preview.innerHTML = `<pre style="font-size:12px; white-space:pre-wrap; background:#fff; border:1px solid #ddd; padding:10px; border-radius:6px;">${info}</pre>`;
+      } else {
+        alert(info);
       }
-
-      // Log completo en consola
-      console.group('🔍 WAC Chat Funnels - YAML Error Debug');
-      console.log('YAML Content:', yaml);
-      console.log('Error Result:', errorResult);
-      console.log('Debug Info:', debugInfo);
-      console.groupEnd();
     }
   }
 
-  // Inicializar cuando el DOM esté listo
   document.addEventListener('DOMContentLoaded', () => {
-    try {
-      window.WACAdminEditor = new WACAdminEditor();
-      window.wacChatAdmin = window.WACAdminEditor; // Alias para compatibilidad
-      console.log('✅ WACAdminEditor initialized with robust YAML handling');
-    } catch (error) {
-      console.error('❌ Failed to initialize WACAdminEditor:', error);
-    }
+    window.WACAdminEditor = new WACAdminEditor();
+    console.log('✅ WACAdminEditor inicializado');
   });
-
 })();
