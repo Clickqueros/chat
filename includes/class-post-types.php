@@ -98,6 +98,7 @@ class WAC_Chat_Post_Types {
                     <button type="button" id="force-debug-btn" class="button" style="background: #0073aa; color: white;">🚨 Force Debug</button>
                     <button type="button" id="test-parser-btn" class="button" style="background: #d63638; color: white;">🧪 Test Parser</button>
                     <button type="button" id="install-composer-btn" class="button" style="background: #00a32a; color: white;">📦 Install Composer</button>
+                    <button type="button" id="debug-save-btn" class="button" style="background: #d63638; color: white;">💾 Debug Save</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
@@ -181,14 +182,7 @@ class WAC_Chat_Post_Types {
         type: event
         name: "lead_capturado"`;
                         
-                        // Update hidden textarea
-                        const configTextarea = document.getElementById('wac-funnel-config');
-                        if (configTextarea) {
-                            configTextarea.value = exampleYAML;
-                            console.log('✅ Updated hidden textarea');
-                        }
-                        
-                        // Update visible editor (try multiple elements)
+                        // Update visible editor first (try multiple elements)
                         const yamlEditor = document.getElementById('yaml-content');
                         const divEditor = document.getElementById('wac-yaml-editor');
                         
@@ -200,6 +194,13 @@ class WAC_Chat_Post_Types {
                             console.log('✅ Updated wac-yaml-editor div');
                         } else {
                             console.log('❌ No editor element found');
+                        }
+                        
+                        // Update hidden textarea LAST (this is what gets saved)
+                        const configTextarea = document.getElementById('wac-funnel-config');
+                        if (configTextarea) {
+                            configTextarea.value = exampleYAML;
+                            console.log('✅ Updated hidden textarea (this is what gets saved)');
                         }
                         
                         // Show success message
@@ -370,6 +371,64 @@ composer install --no-dev --optimize-autoloader</pre>
                     });
                 }
             
+                // Debug Save button
+                const debugSaveBtn = document.getElementById('debug-save-btn');
+                if (debugSaveBtn) {
+                    debugSaveBtn.addEventListener('click', function() {
+                        console.log('💾 Debug Save Button Clicked');
+                        
+                        // Get current YAML from multiple sources
+                        const yamlEditor = document.getElementById('yaml-content');
+                        const divEditor = document.getElementById('wac-yaml-editor');
+                        const hiddenField = document.getElementById('wac-funnel-config');
+                        
+                        let yaml = '';
+                        if (yamlEditor && yamlEditor.value) {
+                            yaml = yamlEditor.value;
+                        } else if (divEditor && divEditor.textContent) {
+                            yaml = divEditor.textContent;
+                        } else if (hiddenField && hiddenField.value) {
+                            yaml = hiddenField.value;
+                        }
+                        
+                        const previewContainer = document.getElementById('wac-chat-preview');
+                        if (previewContainer) {
+                            previewContainer.innerHTML = `
+                                <div style="padding:16px;background:#fff3cd;border:1px solid #ffeaa7;border-radius:6px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #856404;">💾 Debug Save Status</h3>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Current YAML from Editor:</strong><br>
+                                        <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0; max-height: 200px; overflow-y: auto;">${yaml}</pre>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Hidden Field Content:</strong><br>
+                                        <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0; max-height: 200px; overflow-y: auto;">${hiddenField ? hiddenField.value : 'NOT FOUND'}</pre>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Sync Status:</strong><br>
+                                        • Editor length: ${yaml.length}<br>
+                                        • Hidden length: ${hiddenField ? hiddenField.value.length : 'N/A'}<br>
+                                        • Are they equal? ${yaml === (hiddenField ? hiddenField.value : '') ? '✅ YES' : '❌ NO'}
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <strong>Actions:</strong><br>
+                                        <button onclick="document.getElementById('wac-funnel-config').value = document.getElementById('wac-yaml-editor').textContent || document.getElementById('yaml-content').value || ''; alert('Sincronizado!');" class="button">🔄 Force Sync</button>
+                                        <button onclick="document.getElementById('wac-funnel-config').value = ''; alert('Limpiado!');" class="button">🗑️ Clear Hidden</button>
+                                    </div>
+                                    
+                                    <div style="margin-top: 15px;">
+                                        <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar Debug</button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            
                 // Force Debug button
                 const forceDebugBtn = document.getElementById('force-debug-btn');
                 if (forceDebugBtn) {
@@ -469,6 +528,40 @@ composer install --no-dev --optimize-autoloader</pre>
                         console.log('❌ wacChatAdmin object is NOT available');
                     }
                 }, 1000);
+                
+                // Hook para sincronizar antes de guardar
+                const syncBeforeSave = function() {
+                    console.log('🔄 Syncing before save...');
+                    const yamlEditor = document.getElementById('yaml-content');
+                    const divEditor = document.getElementById('wac-yaml-editor');
+                    const hiddenField = document.getElementById('wac-funnel-config');
+                    
+                    let yaml = '';
+                    if (yamlEditor && yamlEditor.value) {
+                        yaml = yamlEditor.value;
+                    } else if (divEditor && divEditor.textContent) {
+                        yaml = divEditor.textContent;
+                    }
+                    
+                    if (hiddenField && yaml) {
+                        hiddenField.value = yaml;
+                        console.log('✅ Synced YAML to hidden field before save');
+                    }
+                };
+                
+                // Hook en el botón de guardar
+                const saveButton = document.getElementById('publish') || document.querySelector('input[name="save"]') || document.querySelector('#post #save-post');
+                if (saveButton) {
+                    saveButton.addEventListener('click', syncBeforeSave);
+                    console.log('✅ Added sync hook to save button');
+                }
+                
+                // Hook en el formulario
+                const postForm = document.getElementById('post');
+                if (postForm) {
+                    postForm.addEventListener('submit', syncBeforeSave);
+                    console.log('✅ Added sync hook to form submit');
+                }
         });
         </script>
         
@@ -493,12 +586,89 @@ composer install --no-dev --optimize-autoloader</pre>
             
             <div id="wac-rules-list">
                 <!-- Las reglas se cargarán dinámicamente con JavaScript -->
+                <?php if (!empty($rules)): ?>
+                    <?php foreach ($rules as $index => $rule): ?>
+                        <div class="wac-rule-item" data-index="<?php echo $index; ?>">
+                            <select name="rule_type_<?php echo $index; ?>" class="rule-type">
+                                <option value="page" <?php selected($rule['type'], 'page'); ?>><?php _e('Página específica', 'wac-chat-funnels'); ?></option>
+                                <option value="post_type" <?php selected($rule['type'], 'post_type'); ?>><?php _e('Tipo de contenido', 'wac-chat-funnels'); ?></option>
+                                <option value="category" <?php selected($rule['type'], 'category'); ?>><?php _e('Categoría', 'wac-chat-funnels'); ?></option>
+                                <option value="time" <?php selected($rule['type'], 'time'); ?>><?php _e('Horario', 'wac-chat-funnels'); ?></option>
+                            </select>
+                            <input type="text" name="rule_value_<?php echo $index; ?>" class="rule-value" value="<?php echo esc_attr($rule['value']); ?>" placeholder="<?php _e('Valor de la regla', 'wac-chat-funnels'); ?>">
+                            <button type="button" class="button wac-remove-rule"><?php _e('Eliminar', 'wac-chat-funnels'); ?></button>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
             
             <button type="button" id="wac-add-rule" class="button"><?php _e('Agregar Regla', 'wac-chat-funnels'); ?></button>
             
             <textarea id="wac-funnel-rules" name="wac_funnel_rules" style="display: none;"><?php echo esc_textarea(json_encode($rules)); ?></textarea>
         </div>
+        
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔧 Rules builder initialized');
+            
+            // Add rule button
+            document.getElementById('wac-add-rule').addEventListener('click', function() {
+                const rulesList = document.getElementById('wac-rules-list');
+                const index = rulesList.children.length;
+                
+                const ruleHtml = `
+                    <div class="wac-rule-item" data-index="${index}">
+                        <select name="rule_type_${index}" class="rule-type">
+                            <option value="page"><?php _e('Página específica', 'wac-chat-funnels'); ?></option>
+                            <option value="post_type"><?php _e('Tipo de contenido', 'wac-chat-funnels'); ?></option>
+                            <option value="category"><?php _e('Categoría', 'wac-chat-funnels'); ?></option>
+                            <option value="time"><?php _e('Horario', 'wac-chat-funnels'); ?></option>
+                        </select>
+                        <input type="text" name="rule_value_${index}" class="rule-value" placeholder="<?php _e('Valor de la regla', 'wac-chat-funnels'); ?>">
+                        <button type="button" class="button wac-remove-rule"><?php _e('Eliminar', 'wac-chat-funnels'); ?></button>
+                    </div>
+                `;
+                
+                rulesList.insertAdjacentHTML('beforeend', ruleHtml);
+                updateRulesJson();
+            });
+            
+            // Remove rule button
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('wac-remove-rule')) {
+                    e.target.closest('.wac-rule-item').remove();
+                    updateRulesJson();
+                }
+            });
+            
+            // Update rules when changed
+            document.addEventListener('change', function(e) {
+                if (e.target.classList.contains('rule-type') || e.target.classList.contains('rule-value')) {
+                    updateRulesJson();
+                }
+            });
+            
+            function updateRulesJson() {
+                const rules = [];
+                const ruleItems = document.querySelectorAll('.wac-rule-item');
+                
+                ruleItems.forEach(function(item, index) {
+                    const type = item.querySelector('.rule-type').value;
+                    const value = item.querySelector('.rule-value').value;
+                    
+                    if (type && value) {
+                        rules.push({
+                            type: type,
+                            value: value
+                        });
+                    }
+                });
+                
+                document.getElementById('wac-funnel-rules').value = JSON.stringify(rules);
+                console.log('📝 Rules updated:', rules);
+            }
+        });
+        </script>
         <?php
     }
     
