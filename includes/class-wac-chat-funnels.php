@@ -67,7 +67,7 @@ class WAC_Chat_Funnels {
             wp_enqueue_script(
                 'wac-chat-admin',
                 WAC_CHAT_PLUGIN_URL . 'assets/js/admin.js',
-                array('wp-element', 'wp-api-fetch', 'wp-components', 'wp-i18n'),
+                array('jquery'),
                 WAC_CHAT_VERSION,
                 true
             );

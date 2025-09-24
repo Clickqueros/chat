@@ -91,9 +91,118 @@ class WAC_Chat_Post_Types {
         
         ?>
         <div id="wac-funnel-editor">
+            <div style="margin-bottom: 10px; padding: 10px; background: #f0f0f1; border-radius: 4px;">
+                <button type="button" id="debug-test-btn" class="button">🔍 Test Debug</button>
+                <button type="button" id="load-example-btn" class="button">📝 Load Example</button>
+                <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
+            </div>
             <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
             <textarea id="wac-funnel-config" name="wac_funnel_config" style="display: none;"><?php echo esc_textarea($config); ?></textarea>
         </div>
+        
+        <script>
+        console.log('🐛 WAC Chat Funnels: Metabox script loaded');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🐛 WAC Chat Funnels: DOM Content Loaded');
+            
+            // Test button
+            const testBtn = document.getElementById('debug-test-btn');
+            if (testBtn) {
+                testBtn.addEventListener('click', function() {
+                    console.log('🐛 Debug Test Button Clicked');
+                    alert('Debug test button works! Check console for details.');
+                    
+                    // Show basic info
+                    const status = document.getElementById('debug-status');
+                    if (status) {
+                        status.innerHTML = 'JavaScript working! ' + new Date().toLocaleTimeString();
+                    }
+                });
+            }
+            
+            // Load example button
+            const exampleBtn = document.getElementById('load-example-btn');
+            if (exampleBtn) {
+                exampleBtn.addEventListener('click', function() {
+                    const configTextarea = document.getElementById('wac-funnel-config');
+                    if (configTextarea) {
+                        const exampleYAML = `funnel:
+  id: "lead_basico"
+  start: "intro"
+  nodes:
+    intro:
+      type: message
+      text: |
+        ¡Hola! Soy **Asistente WACosta** 👋
+        ¿En qué puedo ayudarte hoy?
+      next: menu
+
+    menu:
+      type: question
+      style: choice
+      options:
+        - label: "Quiero cotización"
+          next: form_nombre
+        - label: "Ver portafolio"
+          action: redirect
+          url: "/portafolio"
+        - label: "Hablar por WhatsApp"
+          action: whatsapp
+          phone: "+573154543344"
+          prefill: "Hola, quiero una asesoría."
+
+    form_nombre:
+      type: question
+      style: input
+      validation: "name"
+      store_as: "nombre"
+      text: "¿Cuál es tu nombre?"
+      next: form_email
+
+    form_email:
+      type: question
+      style: input
+      validation: "email"
+      store_as: "email"
+      text: "¿Cuál es tu email?"
+      next: gracias
+
+    gracias:
+      type: message
+      text: "¡Gracias {{nombre}}! Te escribo al correo {{email}} en breve."
+      action: event
+      event_name: "lead_capturado"`;
+                        
+                        configTextarea.value = exampleYAML;
+                        
+                        // Try to update the editor if it exists
+                        const yamlEditor = document.getElementById('yaml-content');
+                        if (yamlEditor) {
+                            yamlEditor.value = exampleYAML;
+                        }
+                        
+                        alert('Example YAML loaded!');
+                    }
+                });
+            }
+            
+            // Check if main script is loaded
+            setTimeout(function() {
+                if (typeof WACAdminEditor !== 'undefined') {
+                    console.log('✅ WACAdminEditor class is available');
+                } else {
+                    console.log('❌ WACAdminEditor class is NOT available');
+                }
+                
+                if (typeof wacChatAdmin !== 'undefined') {
+                    console.log('✅ wacChatAdmin object is available:', wacChatAdmin);
+                } else {
+                    console.log('❌ wacChatAdmin object is NOT available');
+                }
+            }, 1000);
+        });
+        </script>
         
         <div id="wac-funnel-preview" style="margin-top: 20px;">
             <h3><?php _e('Vista Previa', 'wac-chat-funnels'); ?></h3>
