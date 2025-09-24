@@ -595,19 +595,65 @@ composer install --no-dev --optimize-autoloader</pre>
                         // Get current post ID
                         const postId = document.getElementById('post_ID') ? document.getElementById('post_ID').value : 'unknown';
                         
-                        // Get current YAML
+                        // Get current YAML - use the same robust method as the main editor
                         const yamlEditor = document.getElementById('yaml-content');
                         const divEditor = document.getElementById('wac-yaml-editor');
                         const hiddenField = document.getElementById('wac-funnel-config');
                         
                         let yaml = '';
-                        if (yamlEditor && yamlEditor.value) {
-                            yaml = yamlEditor.value;
-                        } else if (divEditor && divEditor.textContent) {
-                            yaml = divEditor.textContent;
-                        } else if (hiddenField && hiddenField.value) {
+                        
+                        // Try multiple sources with detailed logging
+                        console.log('🧪 Getting YAML from sources:');
+                        console.log('- yamlEditor:', yamlEditor ? 'found' : 'not found', yamlEditor ? yamlEditor.value?.substring(0, 50) + '...' : '');
+                        console.log('- divEditor:', divEditor ? 'found' : 'not found', divEditor ? divEditor.textContent?.substring(0, 50) + '...' : '');
+                        console.log('- hiddenField:', hiddenField ? 'found' : 'not found', hiddenField ? hiddenField.value?.substring(0, 50) + '...' : '');
+                        
+                        if (hiddenField && hiddenField.value && hiddenField.value.trim()) {
                             yaml = hiddenField.value;
+                            console.log('✅ Using hiddenField value');
+                        } else if (divEditor && divEditor.textContent && divEditor.textContent.trim()) {
+                            yaml = divEditor.textContent;
+                            console.log('✅ Using divEditor textContent');
+                        } else if (yamlEditor && yamlEditor.value && yamlEditor.value.trim()) {
+                            yaml = yamlEditor.value;
+                            console.log('✅ Using yamlEditor value');
+                        } else {
+                            console.log('❌ No YAML found in any source');
+                            yaml = '';
                         }
+                        
+                        console.log('🧪 Final YAML length:', yaml.length);
+                        
+                        // Add event listener for force sync button
+                        setTimeout(() => {
+                            const forceSyncBtn = document.getElementById('force-sync-btn');
+                            if (forceSyncBtn) {
+                                forceSyncBtn.addEventListener('click', function() {
+                                    console.log('🔄 Force Sync clicked');
+                                    
+                                    // Get YAML from visible editor
+                                    const divEditor = document.getElementById('wac-yaml-editor');
+                                    const hiddenField = document.getElementById('wac-funnel-config');
+                                    
+                                    if (divEditor && hiddenField) {
+                                        const editorContent = divEditor.textContent || divEditor.innerText || '';
+                                        hiddenField.value = editorContent;
+                                        
+                                        const syncStatus = document.getElementById('sync-status');
+                                        if (syncStatus) {
+                                            syncStatus.innerHTML = `✅ Synced ${editorContent.length} chars`;
+                                        }
+                                        
+                                        console.log('✅ Force sync completed:', editorContent.length, 'chars');
+                                    } else {
+                                        const syncStatus = document.getElementById('sync-status');
+                                        if (syncStatus) {
+                                            syncStatus.innerHTML = '❌ Elements not found';
+                                        }
+                                    }
+                                });
+                            }
+                        }, 100);
                         
                         // Step 1: Test YAML validation
                         const previewContainer = document.getElementById('wac-chat-preview');
@@ -615,6 +661,14 @@ composer install --no-dev --optimize-autoloader</pre>
                             previewContainer.innerHTML = `
                                 <div style="padding:16px;background:#e7f3ff;border:1px solid #b3d9ff;border-radius:6px;">
                                     <h3 style="margin: 0 0 15px 0; color: #0066cc;">🧪 Test Save Process</h3>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <strong>Step 0: Sync Editor Content</strong>
+                                        <div style="margin-top: 10px;">
+                                            <button id="force-sync-btn" class="button" style="background: #0073aa; color: white;">🔄 Force Sync Editor</button>
+                                            <span id="sync-status" style="margin-left: 10px;"></span>
+                                        </div>
+                                    </div>
                                     
                                     <div style="margin-bottom: 15px;">
                                         <strong>Step 1: Validating YAML...</strong>
