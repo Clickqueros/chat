@@ -96,6 +96,7 @@ class WAC_Chat_Post_Types {
                     <button type="button" id="load-example-btn" class="button">📝 Load Example</button>
                     <button type="button" id="clear-editor-btn" class="button">🗑️ Clear</button>
                     <button type="button" id="force-debug-btn" class="button" style="background: #0073aa; color: white;">🚨 Force Debug</button>
+                    <button type="button" id="test-parser-btn" class="button" style="background: #d63638; color: white;">🧪 Test Parser</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
@@ -186,13 +187,18 @@ class WAC_Chat_Post_Types {
                             console.log('✅ Updated hidden textarea');
                         }
                         
-                        // Update visible editor
+                        // Update visible editor (try multiple elements)
                         const yamlEditor = document.getElementById('yaml-content');
+                        const divEditor = document.getElementById('wac-yaml-editor');
+                        
                         if (yamlEditor) {
                             yamlEditor.value = exampleYAML;
-                            console.log('✅ Updated yaml editor');
+                            console.log('✅ Updated yaml-content textarea');
+                        } else if (divEditor) {
+                            divEditor.textContent = exampleYAML;
+                            console.log('✅ Updated wac-yaml-editor div');
                         } else {
-                            console.log('❌ yaml-content element not found');
+                            console.log('❌ No editor element found');
                         }
                         
                         // Show success message
@@ -236,15 +242,93 @@ class WAC_Chat_Post_Types {
                     });
                 }
             
+                // Test Parser button
+                const testParserBtn = document.getElementById('test-parser-btn');
+                if (testParserBtn) {
+                    testParserBtn.addEventListener('click', function() {
+                        console.log('🧪 Test Parser Button Clicked');
+                        
+                        const testYAML = `funnel:
+  id: "test_parser"
+  start: "intro"
+  nodes:
+    intro:
+      type: message
+      text: "Test parser"`;
+                        
+                        // Test direct API call
+                        fetch('/wp-json/wac-chat/v1/validate-yaml', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-WP-Nonce': window.wacChatAdmin ? window.wacChatAdmin.apiNonce : ''
+                            },
+                            body: JSON.stringify({ yaml: testYAML })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('🧪 Parser Test Result:', data);
+                            
+                            const previewContainer = document.getElementById('wac-chat-preview');
+                            if (previewContainer) {
+                                previewContainer.innerHTML = `
+                                    <div style="padding:16px;background:#fff3cd;border:1px solid #ffeaa7;border-radius:6px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #856404;">🧪 Test Parser Result</h3>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>Test YAML:</strong><br>
+                                            <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">${testYAML}</pre>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>API Response:</strong><br>
+                                            <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">${JSON.stringify(data, null, 2)}</pre>
+                                        </div>
+                                        
+                                        <div style="margin-top: 15px;">
+                                            <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar Test</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('🧪 Parser Test Error:', error);
+                            
+                            const previewContainer = document.getElementById('wac-chat-preview');
+                            if (previewContainer) {
+                                previewContainer.innerHTML = `
+                                    <div style="padding:16px;background:#f8d7da;border:1px solid #f5c6cb;border-radius:6px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #721c24;">🧪 Test Parser Error</h3>
+                                        <p><strong>Error:</strong> ${error.message}</p>
+                                        <p><strong>Check console for details</strong></p>
+                                        <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar</button>
+                                    </div>
+                                `;
+                            }
+                        });
+                    });
+                }
+            
                 // Force Debug button
                 const forceDebugBtn = document.getElementById('force-debug-btn');
                 if (forceDebugBtn) {
                     forceDebugBtn.addEventListener('click', function() {
                         console.log('🚨 Force Debug Button Clicked');
                         
-                        // Get current YAML
+                        // Get current YAML from multiple sources
                         const yamlEditor = document.getElementById('yaml-content');
-                        const yaml = yamlEditor ? yamlEditor.value : '';
+                        const divEditor = document.getElementById('wac-yaml-editor');
+                        const hiddenField = document.getElementById('wac-funnel-config');
+                        
+                        let yaml = '';
+                        if (yamlEditor && yamlEditor.value) {
+                            yaml = yamlEditor.value;
+                        } else if (divEditor && divEditor.textContent) {
+                            yaml = divEditor.textContent;
+                        } else if (hiddenField && hiddenField.value) {
+                            yaml = hiddenField.value;
+                        }
                         
                         // Get preview container
                         const previewContainer = document.getElementById('wac-chat-preview');
@@ -285,6 +369,10 @@ class WAC_Chat_Post_Types {
                                         • WACAdminEditor: ${typeof WACAdminEditor !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
                                         • wacChatAdmin: ${typeof wacChatAdmin !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
                                         • window.wacChatAdmin: ${typeof window.wacChatAdmin !== 'undefined' ? '✅ Disponible' : '❌ No disponible'}<br>
+                                        • yaml-content element: ${yamlEditor ? '✅ Encontrado' : '❌ No encontrado'}<br>
+                                        • wac-yaml-editor element: ${divEditor ? '✅ Encontrado' : '❌ No encontrado'}<br>
+                                        • wac-funnel-config element: ${hiddenField ? '✅ Encontrado' : '❌ No encontrado'}<br>
+                                        • Hidden field value length: ${hiddenField ? hiddenField.value.length : 'N/A'}<br>
                                     </div>
 
                                     <div style="margin-top: 15px;">
