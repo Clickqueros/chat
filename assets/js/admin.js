@@ -22,10 +22,14 @@ class WACAdminEditor {
     const editorElement = document.getElementById('wac-yaml-editor');
     if (!editorElement) return;
 
+    // Obtener el valor del textarea oculto
+    const configTextarea = document.getElementById('wac-funnel-config');
+    const configValue = configTextarea ? configTextarea.value : '';
+
     // Simple textarea editor for now
     // In production, you'd integrate Monaco Editor
     editorElement.innerHTML = `
-      <textarea id="yaml-content" style="width: 100%; height: 100%; border: none; outline: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px; resize: none;">${document.getElementById('wac-funnel-config').value}</textarea>
+      <textarea id="yaml-content" style="width: 100%; height: 100%; border: none; outline: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px; resize: none;">${configValue}</textarea>
     `;
 
     this.yamlEditor = document.getElementById('yaml-content');
@@ -54,6 +58,14 @@ class WACAdminEditor {
           this.validateYAML();
         }, 500);
       });
+    } else {
+      // Reintentar obtener el editor después de un pequeño delay
+      setTimeout(() => {
+        this.yamlEditor = document.getElementById('yaml-content');
+        if (this.yamlEditor) {
+          this.bindEvents();
+        }
+      }, 100);
     }
 
     // Add rule button
@@ -93,7 +105,7 @@ class WACAdminEditor {
         this.previewContainer.innerHTML = `
           <div style="padding: 20px; color: #d63638; background: #fcf0f1; border-radius: 4px;">
             <strong>Error en YAML:</strong><br>
-            ${result.errors.join('<br>')}
+            ${result.errors ? result.errors.join('<br>') : result.message || 'Error desconocido'}
           </div>
         `;
       }
@@ -109,6 +121,15 @@ class WACAdminEditor {
   async validateYAML(yamlContent = null) {
     const content = yamlContent || this.yamlEditor.value;
     
+    // Verificar que wacChatAdmin esté definido
+    if (typeof wacChatAdmin === 'undefined') {
+      return { 
+        valid: false, 
+        errors: ['Error: Configuración de administración no encontrada'],
+        message: 'Error de configuración'
+      };
+    }
+    
     try {
       const response = await fetch(wacChatAdmin.apiUrl + 'validate-yaml', {
         method: 'POST',
@@ -119,33 +140,54 @@ class WACAdminEditor {
         body: JSON.stringify({ yaml: content })
       });
 
-      return await response.json();
+      const result = await response.json();
+      
+      // Asegurar que el resultado tenga la estructura correcta
+      return {
+        valid: result.valid || false,
+        errors: result.errors || [],
+        message: result.message || '',
+        config: result.config || null
+      };
     } catch (error) {
-      return { valid: false, errors: [error.message] };
+      return { 
+        valid: false, 
+        errors: [error.message || 'Error de conexión'],
+        message: 'Error de validación'
+      };
     }
   }
 
   renderPreview(config) {
+    if (!config || !config.funnel) {
+      this.previewContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">No hay configuración válida para mostrar</div>';
+      return;
+    }
+    
     const funnel = config.funnel;
-    const nodes = funnel.nodes;
-    const startNode = funnel.start;
+    const nodes = funnel.nodes || {};
+    const startNode = funnel.start || '';
 
     let html = `
       <div style="padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-        <h3 style="margin: 0 0 15px 0; color: #1d2327;">${funnel.id}</h3>
+        <h3 style="margin: 0 0 15px 0; color: #1d2327;">${funnel.id || 'Sin ID'}</h3>
         <div style="background: #f0f0f1; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-          <strong>Nodo de inicio:</strong> ${startNode}
+          <strong>Nodo de inicio:</strong> ${startNode || 'No definido'}
         </div>
     `;
 
     // Render nodes
     Object.entries(nodes).forEach(([nodeId, node]) => {
+      if (!node || typeof node !== 'object') {
+        return; // Saltar nodos inválidos
+      }
+      
       html += `
         <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
           <h4 style="margin: 0 0 10px 0; color: #1d2327; display: flex; align-items: center; gap: 10px;">
             ${nodeId}
             <span style="background: #0073aa; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: normal;">
-              ${node.type}
+              ${node.type || 'sin tipo'}
             </span>
           </h4>
       `;
@@ -154,10 +196,12 @@ class WACAdminEditor {
         html += `<div style="margin: 10px 0; line-height: 1.5;">${this.parseMarkdown(node.text)}</div>`;
       }
 
-      if (node.options) {
+      if (node.options && Array.isArray(node.options)) {
         html += `<div style="margin: 10px 0;"><strong>Opciones:</strong></div><ul style="margin: 5px 0; padding-left: 20px;">`;
         node.options.forEach(option => {
-          html += `<li>${option.label}</li>`;
+          if (option && option.label) {
+            html += `<li>${option.label}</li>`;
+          }
         });
         html += `</ul>`;
       }
@@ -367,7 +411,28 @@ class WACAdminEditor {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('wac-funnel-editor')) {
-    new WACAdminEditor();
-  }
+  // Esperar un poco más para asegurar que todos los elementos estén disponibles
+  setTimeout(() => {
+    if (document.getElementById('wac-funnel-editor')) {
+      new WACAdminEditor();
+    }
+  }, 100);
 });
+
+// También intentar inicializar si el DOM ya está listo
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      if (document.getElementById('wac-funnel-editor')) {
+        new WACAdminEditor();
+      }
+    }, 100);
+  });
+} else {
+  // DOM ya está listo
+  setTimeout(() => {
+    if (document.getElementById('wac-funnel-editor')) {
+      new WACAdminEditor();
+    }
+  }, 100);
+}
