@@ -164,9 +164,15 @@ class WAC_Chat_Funnels_Simple {
             </div>
             
             <div style="margin-top: 10px;">
-                <button type="button" class="button button-small" onclick="debugSaveStatus()">🔍 Debug JavaScript</button>
-                <button type="button" class="button button-small" onclick="debugDatabase()">🗄️ Debug Base de Datos</button>
-                <button type="button" class="button button-small" onclick="debugComplete()">📊 Debug Completo</button>
+                <button type="button" class="button button-small" onclick="debugEverything()">🔍 Debug Todo (Copiable)</button>
+            </div>
+            
+            <div id="wac-debug-output" style="display:none; margin-top: 15px; padding: 15px; background: #f8f9fa; border: 2px solid #007cba; border-radius: 5px; max-height: 400px; overflow-y: auto;">
+                <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="margin: 0; color: #007cba;">🔍 Debug Output</h4>
+                    <button type="button" class="button button-small" onclick="copyDebugOutput()">📋 Copiar</button>
+                </div>
+                <pre id="wac-debug-text" style="margin: 0; font-family: monospace; font-size: 12px; white-space: pre-wrap; background: white; padding: 10px; border: 1px solid #ddd; border-radius: 3px;"></pre>
             </div>
             
             <div id="wac-save-notice" style="display:none; margin-top: 15px; padding: 10px; border-radius: 4px;"></div>
@@ -311,41 +317,49 @@ class WAC_Chat_Funnels_Simple {
                     }
                 });
                 
-                stepIds.forEach(stepId => {
-                    const stepNumber = stepIds.size > 0 ? Array.from(stepIds).indexOf(stepId) + 1 : 1;
-                    
-                    const newStep = document.createElement('div');
-                    newStep.className = 'wac-step';
-                    newStep.setAttribute('data-step', stepNumber);
-                    newStep.setAttribute('data-step-id', stepId);
-                    newStep.innerHTML = `
-                        <div class="wac-step-header">
-                            <span class="wac-step-number">${stepNumber}</span>
-                            <span class="wac-step-title">Mensaje ${stepNumber}</span>
-                            <button class="wac-step-delete" onclick="deleteStep(${stepNumber})">×</button>
-                        </div>
-                        <div class="wac-step-content">
-                            <label>Mensaje:</label>
-                            <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí...">${wacSavedSteps[stepId + '_message'] || ''}</textarea>
-                            
-                            <label>Después de este mensaje:</label>
-                            <select name="${stepId}_next">
-                                <option value="">Seleccionar...</option>
-                                <option value="whatsapp" ${wacSavedSteps[stepId + '_next'] === 'whatsapp' ? 'selected' : ''}>Ir a WhatsApp</option>
-                                <option value="end" ${wacSavedSteps[stepId + '_next'] === 'end' ? 'selected' : ''}>Finalizar chat</option>
-                            </select>
-                            
-                            <div class="wac-tip">
-                                <strong>💡 Tip:</strong> Este es un paso tipo "Mensaje" simple. Solo necesitas escribir el texto y elegir qué pasa después.
-                            </div>
-                        </div>
-                    `;
-                    
-                    container.appendChild(newStep);
-                });
+                console.log('Step IDs encontrados:', Array.from(stepIds));
                 
-                updateStepNumbers();
-                showNotice('✅ Configuración cargada desde la base de datos.', 'success');
+                if (stepIds.size > 0) {
+                    let stepNumber = 1;
+                    stepIds.forEach(stepId => {
+                        console.log(`Recreando paso: ${stepId}`);
+                        
+                        const newStep = document.createElement('div');
+                        newStep.className = 'wac-step';
+                        newStep.setAttribute('data-step', stepNumber);
+                        newStep.setAttribute('data-step-id', stepId);
+                        newStep.innerHTML = `
+                            <div class="wac-step-header">
+                                <span class="wac-step-number">${stepNumber}</span>
+                                <span class="wac-step-title">Mensaje ${stepNumber}</span>
+                                <button class="wac-step-delete" onclick="deleteStep(${stepNumber})">×</button>
+                            </div>
+                            <div class="wac-step-content">
+                                <label>Mensaje:</label>
+                                <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí...">${wacSavedSteps[stepId + '_message'] || ''}</textarea>
+                                
+                                <label>Después de este mensaje:</label>
+                                <select name="${stepId}_next">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="whatsapp" ${wacSavedSteps[stepId + '_next'] === 'whatsapp' ? 'selected' : ''}>Ir a WhatsApp</option>
+                                    <option value="end" ${wacSavedSteps[stepId + '_next'] === 'end' ? 'selected' : ''}>Finalizar chat</option>
+                                </select>
+                                
+                                <div class="wac-tip">
+                                    <strong>💡 Tip:</strong> Este es un paso tipo "Mensaje" simple. Solo necesitas escribir el texto y elegir qué pasa después.
+                                </div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(newStep);
+                        stepNumber++;
+                    });
+                    
+                    updateStepNumbers();
+                    showNotice(`✅ ${stepIds.size} paso(s) cargado(s) desde la base de datos.`, 'success');
+                } else {
+                    showNotice('⚠️ No se encontraron pasos en los datos guardados.', 'warning');
+                }
             } else {
                 showNotice('⚠️ No hay configuración guardada.', 'warning');
             }
@@ -377,116 +391,70 @@ class WAC_Chat_Funnels_Simple {
             }, 3000);
         }
         
-        function debugSaveStatus() {
+        function debugEverything() {
             const hiddenField = document.getElementById('wac-funnel-steps-hidden');
             const steps = document.querySelectorAll('.wac-step');
+            const postId = window.location.href.match(/post=(\d+)/);
+            const currentPostId = postId ? postId[1] : 'NO ENCONTRADO';
             
-            let debugInfo = `🔍 DEBUG JAVASCRIPT\n\n`;
-            debugInfo += `📊 Pasos en pantalla: ${steps.length}\n`;
-            debugInfo += `💾 Campo oculto: ${hiddenField.value.length} caracteres\n\n`;
+            let debugInfo = `=== WAC CHAT FUNNELS DEBUG ===\n`;
+            debugInfo += `Timestamp: ${new Date().toLocaleString()}\n`;
+            debugInfo += `URL: ${window.location.href}\n`;
+            debugInfo += `Post ID: ${currentPostId}\n\n`;
+            
+            debugInfo += `=== JAVASCRIPT STATE ===\n`;
+            debugInfo += `Pasos en pantalla: ${steps.length}\n`;
+            debugInfo += `Campo oculto length: ${hiddenField.value.length} caracteres\n`;
+            debugInfo += `wacSavedSteps definido: ${typeof wacSavedSteps !== 'undefined' ? 'SÍ' : 'NO'}\n\n`;
             
             if (steps.length > 0) {
-                debugInfo += `📝 Datos actuales:\n`;
+                debugInfo += `=== PASOS ACTUALES ===\n`;
                 steps.forEach((step, index) => {
                     const stepId = step.getAttribute('data-step-id');
                     const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
                     const nextField = step.querySelector(`select[name="${stepId}_next"]`);
                     
-                    debugInfo += `Paso ${index + 1} (${stepId}):\n`;
+                    debugInfo += `Paso ${index + 1}:\n`;
+                    debugInfo += `  ID: ${stepId}\n`;
                     debugInfo += `  Mensaje: "${messageField ? messageField.value : 'NO ENCONTRADO'}"\n`;
                     debugInfo += `  Acción: "${nextField ? nextField.value : 'NO ENCONTRADO'}"\n\n`;
                 });
+            } else {
+                debugInfo += `=== PROBLEMA: NO HAY PASOS VISIBLES ===\n\n`;
             }
             
-            if (hiddenField.value) {
+            debugInfo += `=== CAMPO OCULTO ===\n`;
+            if (hiddenField.value && hiddenField.value !== '{}') {
                 try {
                     const savedData = JSON.parse(hiddenField.value);
-                    debugInfo += `💾 Datos en campo oculto:\n`;
-                    debugInfo += JSON.stringify(savedData, null, 2);
+                    debugInfo += `Contenido válido:\n${JSON.stringify(savedData, null, 2)}\n\n`;
                 } catch (e) {
-                    debugInfo += `❌ Error al parsear datos: ${e.message}\n`;
-                    debugInfo += `Contenido: ${hiddenField.value}`;
+                    debugInfo += `Error al parsear: ${e.message}\n`;
+                    debugInfo += `Contenido crudo: ${hiddenField.value}\n\n`;
                 }
             } else {
-                debugInfo += `❌ Campo oculto está vacío`;
+                debugInfo += `VACÍO o inválido\n\n`;
             }
             
-            alert(debugInfo);
+            debugInfo += `=== DATOS CARGADOS (wacSavedSteps) ===\n`;
+            if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
+                debugInfo += `Contenido:\n${JSON.stringify(wacSavedSteps, null, 2)}\n\n`;
+            } else {
+                debugInfo += `VACÍO o no definido\n\n`;
+            }
+            
+            // Mostrar en el área de debug
+            document.getElementById('wac-debug-text').textContent = debugInfo;
+            document.getElementById('wac-debug-output').style.display = 'block';
         }
         
-        function debugDatabase() {
-            // Obtener el ID del post actual
-            const postId = window.location.href.match(/post=(\d+)/);
-            const currentPostId = postId ? postId[1] : 'NO ENCONTRADO';
-            
-            let debugInfo = `🗄️ DEBUG BASE DE DATOS\n\n`;
-            debugInfo += `📋 Post ID: ${currentPostId}\n\n`;
-            
-            // Hacer petición AJAX para verificar base de datos
-            fetch(ajaxurl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: `action=wac_debug_database&post_id=${currentPostId}&nonce=<?php echo wp_create_nonce('wac_debug_nonce'); ?>`
-            })
-            .then(response => response.text())
-            .then(data => {
-                debugInfo += `📊 Respuesta de BD:\n${data}`;
-                alert(debugInfo);
-            })
-            .catch(error => {
-                debugInfo += `❌ Error en petición: ${error.message}`;
-                alert(debugInfo);
+        function copyDebugOutput() {
+            const debugText = document.getElementById('wac-debug-text').textContent;
+            navigator.clipboard.writeText(debugText).then(() => {
+                showNotice('✅ Debug copiado al portapapeles', 'success');
+            }).catch(() => {
+                showNotice('❌ Error al copiar', 'warning');
             });
-        }
-        
-        function debugComplete() {
-            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
-            const steps = document.querySelectorAll('.wac-step');
-            const postId = window.location.href.match(/post=(\d+)/);
-            const currentPostId = postId ? postId[1] : 'NO ENCONTRADO';
-            
-            let debugInfo = `📊 DEBUG COMPLETO\n\n`;
-            debugInfo += `🔗 URL: ${window.location.href}\n`;
-            debugInfo += `📋 Post ID: ${currentPostId}\n`;
-            debugInfo += `📊 Pasos en pantalla: ${steps.length}\n`;
-            debugInfo += `💾 Campo oculto: ${hiddenField.value.length} caracteres\n\n`;
-            
-            if (steps.length > 0) {
-                debugInfo += `📝 DATOS ACTUALES:\n`;
-                steps.forEach((step, index) => {
-                    const stepId = step.getAttribute('data-step-id');
-                    const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
-                    const nextField = step.querySelector(`select[name="${stepId}_next"]`);
-                    
-                    debugInfo += `Paso ${index + 1} (${stepId}):\n`;
-                    debugInfo += `  Mensaje: "${messageField ? messageField.value : 'NO ENCONTRADO'}"\n`;
-                    debugInfo += `  Acción: "${nextField ? nextField.value : 'NO ENCONTRADO'}"\n\n`;
-                });
-            }
-            
-            if (hiddenField.value) {
-                try {
-                    const savedData = JSON.parse(hiddenField.value);
-                    debugInfo += `💾 CAMPO OCULTO:\n`;
-                    debugInfo += JSON.stringify(savedData, null, 2) + '\n\n';
-                } catch (e) {
-                    debugInfo += `❌ Error en campo oculto: ${e.message}\n\n`;
-                }
-            } else {
-                debugInfo += `❌ Campo oculto vacío\n\n`;
-            }
-            
-            // Verificar datos guardados
-            if (typeof wacSavedSteps !== 'undefined') {
-                debugInfo += `🗄️ DATOS GUARDADOS (wacSavedSteps):\n`;
-                debugInfo += JSON.stringify(wacSavedSteps, null, 2);
-            } else {
-                debugInfo += `❌ wacSavedSteps no definido`;
-            }
-            
-            alert(debugInfo);
         }
         
         // Auto-guardado silencioso cada 2 segundos
