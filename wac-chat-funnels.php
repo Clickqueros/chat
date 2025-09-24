@@ -393,17 +393,29 @@ class WAC_Chat_Funnels {
         
         .wac-option {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             margin-bottom: 10px;
             align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
         }
         
         .wac-option input[type="text"] {
-            flex: 1;
+            flex: 2;
+            min-width: 120px;
         }
         
         .wac-option select {
             flex: 1;
+            min-width: 100px;
+        }
+        
+        .wac-option button {
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
         }
         
         .wac-builder-actions {
@@ -535,13 +547,14 @@ class WAC_Chat_Funnels {
                             <label>Opciones (para preguntas):</label>
                             <div class="wac-options">
                                 <div class="wac-option">
-                                    <input type="text" name="${stepId}_option_1_text" placeholder="Texto del botón">
-                                    <select name="${stepId}_option_1_action">
-                                        <option value="next">Siguiente paso</option>
-                                        <option value="whatsapp">WhatsApp</option>
-                                        <option value="redirect">Redirección</option>
+                                    <input type="text" name="${stepId}_option_1_text" placeholder="Texto del botón (ej: Opción A, Ver más, etc.)">
+                                    <select name="${stepId}_option_1_action" onchange="handleOptionActionChange('${stepId}', 1, this.value)">
+                                        <option value="next">Ir a paso específico</option>
+                                        <option value="whatsapp">WhatsApp directo</option>
+                                        <option value="redirect">Redirección a URL</option>
                                     </select>
-                                    <input type="text" name="${stepId}_option_1_url" placeholder="URL (si es redirección)" style="display:none;">
+                                    <input type="text" name="${stepId}_option_1_target" placeholder="Número de paso o URL" style="display:none;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; border-radius: 3px; padding: 5px 8px; cursor: pointer;">×</button>
                                 </div>
                             </div>
                             <button type="button" class="button button-small" onclick="addOptionToStep('${stepId}')">+ Agregar Opción</button>
@@ -663,24 +676,50 @@ class WAC_Chat_Funnels {
         
         function addOptionToStep(stepId) {
             const optionsContainer = document.querySelector(`#${stepId}_options .wac-options`);
-            if (!optionsContainer) return;
+            if (!optionsContainer) {
+                console.error('No se encontró el contenedor de opciones:', `#${stepId}_options .wac-options`);
+                return;
+            }
             
             const optionCount = optionsContainer.children.length + 1;
             
             const newOption = document.createElement('div');
             newOption.className = 'wac-option';
             newOption.innerHTML = `
-                <input type="text" name="${stepId}_option_${optionCount}_text" placeholder="Texto del botón">
-                <select name="${stepId}_option_${optionCount}_action">
-                    <option value="next">Siguiente paso</option>
-                    <option value="whatsapp">WhatsApp</option>
-                    <option value="redirect">Redirección</option>
+                <input type="text" name="${stepId}_option_${optionCount}_text" placeholder="Texto del botón (ej: Opción A, Ver más, etc.)">
+                <select name="${stepId}_option_${optionCount}_action" onchange="handleOptionActionChange('${stepId}', ${optionCount}, this.value)">
+                    <option value="next">Ir a paso específico</option>
+                    <option value="whatsapp">WhatsApp directo</option>
+                    <option value="redirect">Redirección a URL</option>
                 </select>
-                <input type="text" name="${stepId}_option_${optionCount}_url" placeholder="URL (si es redirección)" style="display:none;">
-                <button type="button" onclick="this.parentElement.remove()">×</button>
+                <input type="text" name="${stepId}_option_${optionCount}_target" placeholder="Número de paso o URL" style="display:none;">
+                <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; border-radius: 3px; padding: 5px 8px; cursor: pointer;">×</button>
             `;
             
             optionsContainer.appendChild(newOption);
+            console.log(`Opción ${optionCount} agregada al paso ${stepId}`);
+        }
+        
+        function handleOptionActionChange(stepId, optionCount, action) {
+            const targetInput = document.querySelector(`input[name="${stepId}_option_${optionCount}_target"]`);
+            if (!targetInput) return;
+            
+            switch(action) {
+                case 'next':
+                    targetInput.placeholder = 'Número de paso (ej: 3, 4, 5)';
+                    targetInput.style.display = 'block';
+                    break;
+                case 'whatsapp':
+                    targetInput.placeholder = 'Mensaje predefinido (opcional)';
+                    targetInput.style.display = 'block';
+                    break;
+                case 'redirect':
+                    targetInput.placeholder = 'URL completa (ej: /portafolio, https://ejemplo.com)';
+                    targetInput.style.display = 'block';
+                    break;
+                default:
+                    targetInput.style.display = 'none';
+            }
         }
         
         function addOption(stepNumber) {
@@ -989,13 +1028,14 @@ class WAC_Chat_Funnels {
                             <label>Opciones (para preguntas):</label>
                             <div class="wac-options">
                                 <div class="wac-option">
-                                    <input type="text" name="${stepId}_option_1_text" placeholder="Texto del botón">
-                                    <select name="${stepId}_option_1_action">
-                                        <option value="next">Siguiente paso</option>
-                                        <option value="whatsapp">WhatsApp</option>
-                                        <option value="redirect">Redirección</option>
+                                    <input type="text" name="${stepId}_option_1_text" placeholder="Texto del botón (ej: Opción A, Ver más, etc.)">
+                                    <select name="${stepId}_option_1_action" onchange="handleOptionActionChange('${stepId}', 1, this.value)">
+                                        <option value="next">Ir a paso específico</option>
+                                        <option value="whatsapp">WhatsApp directo</option>
+                                        <option value="redirect">Redirección a URL</option>
                                     </select>
-                                    <input type="text" name="${stepId}_option_1_url" placeholder="URL (si es redirección)" style="display:none;">
+                                    <input type="text" name="${stepId}_option_1_target" placeholder="Número de paso o URL" style="display:none;">
+                                    <button type="button" onclick="this.parentElement.remove()" style="background: #dc3545; color: white; border: none; border-radius: 3px; padding: 5px 8px; cursor: pointer;">×</button>
                                 </div>
                             </div>
                             <button type="button" class="button button-small" onclick="addOptionToStep('${stepId}')">+ Agregar Opción</button>
@@ -1150,16 +1190,14 @@ ${analyzeSteps()}`;
                 updateStepType(stepId, e.target.value);
             }
             
-            // Manejar cambios en selects de acción
+            // Manejar cambios en selects de acción (nueva estructura)
             if (e.target.name && e.target.name.includes('_action')) {
-                const urlInput = e.target.parentElement.querySelector('input[type="text"]');
-                if (urlInput) {
-                    if (e.target.value === 'redirect') {
-                        urlInput.style.display = 'block';
-                    } else {
-                        urlInput.style.display = 'none';
-                    }
-                }
+                const fieldName = e.target.name;
+                const stepId = fieldName.substring(0, fieldName.lastIndexOf('_option_'));
+                const optionNumber = fieldName.match(/_option_(\d+)_action/)[1];
+                
+                console.log(`Cambio en acción de opción ${optionNumber} del paso ${stepId}:`, e.target.value);
+                handleOptionActionChange(stepId, optionNumber, e.target.value);
             }
         });
         </script>
