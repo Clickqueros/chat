@@ -18,6 +18,7 @@ class WAC_Chat_Funnels_Simple {
         add_action('add_meta_boxes', array($this, 'add_meta_boxes'));
         add_action('save_post', array($this, 'save_metaboxes'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
+        add_action('wp_ajax_wac_debug_database', array($this, 'ajax_debug_database'));
     }
     
     public function init() {
@@ -163,7 +164,9 @@ class WAC_Chat_Funnels_Simple {
             </div>
             
             <div style="margin-top: 10px;">
-                <button type="button" class="button button-small" onclick="debugSaveStatus()">🔍 Ver Estado de Guardado</button>
+                <button type="button" class="button button-small" onclick="debugSaveStatus()">🔍 Debug JavaScript</button>
+                <button type="button" class="button button-small" onclick="debugDatabase()">🗄️ Debug Base de Datos</button>
+                <button type="button" class="button button-small" onclick="debugComplete()">📊 Debug Completo</button>
             </div>
             
             <div id="wac-save-notice" style="display:none; margin-top: 15px; padding: 10px; border-radius: 4px;"></div>
@@ -175,6 +178,7 @@ class WAC_Chat_Funnels_Simple {
         <!-- Script para pasar datos guardados -->
         <script type="text/javascript">
             var wacSavedSteps = <?php echo json_encode($saved_steps ?: array()); ?>;
+            var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
         </script>
         
         <script>
@@ -377,7 +381,7 @@ class WAC_Chat_Funnels_Simple {
             const hiddenField = document.getElementById('wac-funnel-steps-hidden');
             const steps = document.querySelectorAll('.wac-step');
             
-            let debugInfo = `🔍 DEBUG - Estado de Guardado\n\n`;
+            let debugInfo = `🔍 DEBUG JAVASCRIPT\n\n`;
             debugInfo += `📊 Pasos en pantalla: ${steps.length}\n`;
             debugInfo += `💾 Campo oculto: ${hiddenField.value.length} caracteres\n\n`;
             
@@ -397,14 +401,89 @@ class WAC_Chat_Funnels_Simple {
             if (hiddenField.value) {
                 try {
                     const savedData = JSON.parse(hiddenField.value);
-                    debugInfo += `💾 Datos guardados en campo oculto:\n`;
+                    debugInfo += `💾 Datos en campo oculto:\n`;
                     debugInfo += JSON.stringify(savedData, null, 2);
                 } catch (e) {
-                    debugInfo += `❌ Error al parsear datos guardados: ${e.message}\n`;
+                    debugInfo += `❌ Error al parsear datos: ${e.message}\n`;
                     debugInfo += `Contenido: ${hiddenField.value}`;
                 }
             } else {
                 debugInfo += `❌ Campo oculto está vacío`;
+            }
+            
+            alert(debugInfo);
+        }
+        
+        function debugDatabase() {
+            // Obtener el ID del post actual
+            const postId = window.location.href.match(/post=(\d+)/);
+            const currentPostId = postId ? postId[1] : 'NO ENCONTRADO';
+            
+            let debugInfo = `🗄️ DEBUG BASE DE DATOS\n\n`;
+            debugInfo += `📋 Post ID: ${currentPostId}\n\n`;
+            
+            // Hacer petición AJAX para verificar base de datos
+            fetch(ajaxurl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `action=wac_debug_database&post_id=${currentPostId}&nonce=<?php echo wp_create_nonce('wac_debug_nonce'); ?>`
+            })
+            .then(response => response.text())
+            .then(data => {
+                debugInfo += `📊 Respuesta de BD:\n${data}`;
+                alert(debugInfo);
+            })
+            .catch(error => {
+                debugInfo += `❌ Error en petición: ${error.message}`;
+                alert(debugInfo);
+            });
+        }
+        
+        function debugComplete() {
+            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
+            const steps = document.querySelectorAll('.wac-step');
+            const postId = window.location.href.match(/post=(\d+)/);
+            const currentPostId = postId ? postId[1] : 'NO ENCONTRADO';
+            
+            let debugInfo = `📊 DEBUG COMPLETO\n\n`;
+            debugInfo += `🔗 URL: ${window.location.href}\n`;
+            debugInfo += `📋 Post ID: ${currentPostId}\n`;
+            debugInfo += `📊 Pasos en pantalla: ${steps.length}\n`;
+            debugInfo += `💾 Campo oculto: ${hiddenField.value.length} caracteres\n\n`;
+            
+            if (steps.length > 0) {
+                debugInfo += `📝 DATOS ACTUALES:\n`;
+                steps.forEach((step, index) => {
+                    const stepId = step.getAttribute('data-step-id');
+                    const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
+                    const nextField = step.querySelector(`select[name="${stepId}_next"]`);
+                    
+                    debugInfo += `Paso ${index + 1} (${stepId}):\n`;
+                    debugInfo += `  Mensaje: "${messageField ? messageField.value : 'NO ENCONTRADO'}"\n`;
+                    debugInfo += `  Acción: "${nextField ? nextField.value : 'NO ENCONTRADO'}"\n\n`;
+                });
+            }
+            
+            if (hiddenField.value) {
+                try {
+                    const savedData = JSON.parse(hiddenField.value);
+                    debugInfo += `💾 CAMPO OCULTO:\n`;
+                    debugInfo += JSON.stringify(savedData, null, 2) + '\n\n';
+                } catch (e) {
+                    debugInfo += `❌ Error en campo oculto: ${e.message}\n\n`;
+                }
+            } else {
+                debugInfo += `❌ Campo oculto vacío\n\n`;
+            }
+            
+            // Verificar datos guardados
+            if (typeof wacSavedSteps !== 'undefined') {
+                debugInfo += `🗄️ DATOS GUARDADOS (wacSavedSteps):\n`;
+                debugInfo += JSON.stringify(wacSavedSteps, null, 2);
+            } else {
+                debugInfo += `❌ wacSavedSteps no definido`;
             }
             
             alert(debugInfo);
@@ -469,6 +548,45 @@ class WAC_Chat_Funnels_Simple {
     
     public function enqueue_scripts() {
         // Scripts del frontend (por implementar)
+    }
+    
+    public function ajax_debug_database() {
+        // Verificar nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'wac_debug_nonce')) {
+            wp_die('Nonce verification failed');
+        }
+        
+        $post_id = intval($_POST['post_id']);
+        
+        if (!$post_id) {
+            echo "❌ Post ID no válido";
+            wp_die();
+        }
+        
+        // Obtener todos los meta del post
+        $all_meta = get_post_meta($post_id);
+        $funnel_steps = get_post_meta($post_id, '_wac_funnel_steps_data', true);
+        
+        $debug_info = "📋 Post ID: {$post_id}\n";
+        $debug_info .= "📊 Post existe: " . (get_post($post_id) ? 'SÍ' : 'NO') . "\n\n";
+        
+        $debug_info .= "🗄️ META COMPLETO:\n";
+        foreach ($all_meta as $key => $value) {
+            $debug_info .= "  {$key}: " . print_r($value, true) . "\n";
+        }
+        
+        $debug_info .= "\n🎯 FUNNEL STEPS ESPECÍFICO:\n";
+        if ($funnel_steps) {
+            $debug_info .= "  Encontrado: SÍ\n";
+            $debug_info .= "  Tipo: " . gettype($funnel_steps) . "\n";
+            $debug_info .= "  Contenido: " . print_r($funnel_steps, true) . "\n";
+        } else {
+            $debug_info .= "  Encontrado: NO\n";
+            $debug_info .= "  Valor: " . var_export($funnel_steps, true) . "\n";
+        }
+        
+        echo $debug_info;
+        wp_die();
     }
 }
 
