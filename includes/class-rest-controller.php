@@ -96,14 +96,25 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
         $yaml_content = $request->get_param('yaml');
         
         if (empty($yaml_content)) {
-            return new WP_Error('empty_yaml', __('Contenido YAML vacío', 'wac-chat-funnels'), array('status' => 400));
+            return rest_ensure_response(array(
+                'valid' => false,
+                'message' => __('Contenido YAML vacío', 'wac-chat-funnels'),
+                'errors' => array(__('El contenido YAML no puede estar vacío', 'wac-chat-funnels'))
+            ));
         }
         
         // Usar la nueva clase YAML Processor
         $processed = WAC_Chat_YAML_Processor::process_yaml($yaml_content);
         
         if (is_wp_error($processed)) {
-            return $processed;
+            $data = $processed->get_error_data();
+            $errors = is_array($data) ? array_values($data)
+                     : (is_string($data) ? array($data) : array());
+            return rest_ensure_response(array(
+                'valid' => false,
+                'message' => $processed->get_error_message(),
+                'errors' => $errors,
+            ));
         }
         
         return rest_ensure_response(array(
@@ -236,21 +247,34 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
         $yaml_content = $request->get_param('yaml');
         
         if (empty($yaml_content)) {
-            return new WP_Error('empty_yaml', __('Contenido YAML vacío', 'wac-chat-funnels'), array('status' => 400));
+            return rest_ensure_response(array(
+                'valid' => false,
+                'message' => __('Contenido YAML vacío', 'wac-chat-funnels'),
+                'errors' => array(__('El contenido YAML no puede estar vacío', 'wac-chat-funnels'))
+            ));
         }
         
         // Usar la nueva clase YAML Processor
         $processed = WAC_Chat_YAML_Processor::process_yaml($yaml_content);
         
         if (is_wp_error($processed)) {
-            return $processed;
+            $data = $processed->get_error_data();
+            $errors = is_array($data) ? array_values($data)
+                     : (is_string($data) ? array($data) : array());
+            return rest_ensure_response(array(
+                'valid' => false,
+                'message' => $processed->get_error_message(),
+                'errors' => $errors,
+            ));
         }
         
         // Generar preview HTML
         $preview_html = self::generate_preview_html($processed['parsed']);
         
         return rest_ensure_response(array(
+            'valid' => true,
             'html' => $preview_html,
+            'preview' => $preview_html,
             'config' => $processed['parsed'],
             'json' => $processed['json']
         ));
