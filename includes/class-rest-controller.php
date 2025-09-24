@@ -99,34 +99,19 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
             return new WP_Error('empty_yaml', __('Contenido YAML vacío', 'wac-chat-funnels'), array('status' => 400));
         }
         
-        try {
-            // Parsear YAML usando un parser simple
-            $parsed = self::simple_yaml_parse($yaml_content);
-            
-            if ($parsed === null) {
-                return new WP_Error('invalid_yaml', __('YAML inválido', 'wac-chat-funnels'), array('status' => 400));
-            }
-            
-            // Validar estructura del funnel
-            $validation_result = self::validate_funnel_structure($parsed);
-            
-            if ($validation_result['valid']) {
-                return rest_ensure_response(array(
-                    'valid' => true,
-                    'message' => __('YAML válido', 'wac-chat-funnels'),
-                    'config' => $parsed
-                ));
-            } else {
-                return rest_ensure_response(array(
-                    'valid' => false,
-                    'message' => $validation_result['message'],
-                    'errors' => $validation_result['errors']
-                ));
-            }
-            
-        } catch (Exception $e) {
-            return new WP_Error('yaml_error', $e->getMessage(), array('status' => 400));
+        // Usar la nueva clase YAML Processor
+        $processed = WAC_Chat_YAML_Processor::process_yaml($yaml_content);
+        
+        if (is_wp_error($processed)) {
+            return $processed;
         }
+        
+        return rest_ensure_response(array(
+            'valid' => true,
+            'message' => __('YAML válido', 'wac-chat-funnels'),
+            'config' => $processed['parsed'],
+            'json' => $processed['json']
+        ));
     }
     
     private static function simple_yaml_parse($yaml_string) {
@@ -254,24 +239,21 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
             return new WP_Error('empty_yaml', __('Contenido YAML vacío', 'wac-chat-funnels'), array('status' => 400));
         }
         
-        try {
-            $parsed = self::simple_yaml_parse($yaml_content);
-            
-            if ($parsed === null) {
-                return new WP_Error('invalid_yaml', __('YAML inválido', 'wac-chat-funnels'), array('status' => 400));
-            }
-            
-            // Generar preview HTML
-            $preview_html = self::generate_preview_html($parsed);
-            
-            return rest_ensure_response(array(
-                'html' => $preview_html,
-                'config' => $parsed
-            ));
-            
-        } catch (Exception $e) {
-            return new WP_Error('preview_error', $e->getMessage(), array('status' => 400));
+        // Usar la nueva clase YAML Processor
+        $processed = WAC_Chat_YAML_Processor::process_yaml($yaml_content);
+        
+        if (is_wp_error($processed)) {
+            return $processed;
         }
+        
+        // Generar preview HTML
+        $preview_html = self::generate_preview_html($processed['parsed']);
+        
+        return rest_ensure_response(array(
+            'html' => $preview_html,
+            'config' => $processed['parsed'],
+            'json' => $processed['json']
+        ));
     }
     
     public function get_funnel_permissions_check($request) {

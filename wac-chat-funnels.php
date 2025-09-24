@@ -22,6 +22,11 @@ define('WAC_CHAT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WAC_CHAT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WAC_CHAT_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
+// Cargar Composer autoloader si existe
+if (file_exists(WAC_CHAT_PLUGIN_DIR . 'vendor/autoload.php')) {
+    require_once WAC_CHAT_PLUGIN_DIR . 'vendor/autoload.php';
+}
+
 // Función para cargar clases
 function wac_chat_funnels_load_classes() {
     $classes = array(
@@ -36,7 +41,8 @@ function wac_chat_funnels_load_classes() {
         'WAC_Chat_Metaboxes' => 'class-metaboxes.php',
         'WAC_Chat_Admin' => 'class-admin.php',
         'WAC_Chat_Webhooks' => 'class-webhooks.php',
-        'WAC_Chat_Leads' => 'class-leads.php'
+        'WAC_Chat_Leads' => 'class-leads.php',
+        'WAC_Chat_YAML_Processor' => 'class-yaml-processor.php'
     );
 
     foreach ($classes as $class_name => $file_name) {

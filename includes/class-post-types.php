@@ -127,7 +127,7 @@ class WAC_Chat_Post_Types {
                 exampleBtn.addEventListener('click', function() {
                     const configTextarea = document.getElementById('wac-funnel-config');
                     if (configTextarea) {
-                        const exampleYAML = `funnel:
+                            const exampleYAML = `funnel:
   id: "lead_basico"
   start: "intro"
   nodes:

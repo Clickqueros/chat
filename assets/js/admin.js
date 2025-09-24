@@ -129,8 +129,8 @@ class WACAdminEditor {
     alert(basicInfo + '\n\nFull details logged to console (F12).');
   }
 
-  loadExampleYAML() {
-    const exampleYAML = `funnel:
+    loadExampleYAML() {
+        const exampleYAML = `funnel:
   id: "lead_basico"
   start: "intro"
   nodes:
