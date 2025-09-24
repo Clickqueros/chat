@@ -94,6 +94,7 @@ class WAC_Chat_Post_Types {
                 <div style="margin-bottom: 10px; padding: 10px; background: #f0f0f1; border-radius: 4px;">
                     <button type="button" id="debug-test-btn" class="button">🔍 Test Debug</button>
                     <button type="button" id="load-example-btn" class="button">📝 Load Example</button>
+                    <button type="button" id="clear-editor-btn" class="button">🗑️ Clear</button>
                     <button type="button" id="force-debug-btn" class="button" style="background: #0073aa; color: white;">🚨 Force Debug</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
@@ -122,13 +123,13 @@ class WAC_Chat_Post_Types {
                 });
             }
             
-            // Load example button
-            const exampleBtn = document.getElementById('load-example-btn');
-            if (exampleBtn) {
-                exampleBtn.addEventListener('click', function() {
-                    const configTextarea = document.getElementById('wac-funnel-config');
-                    if (configTextarea) {
-                            const exampleYAML = `funnel:
+                // Load example button
+                const exampleBtn = document.getElementById('load-example-btn');
+                if (exampleBtn) {
+                    exampleBtn.addEventListener('click', function() {
+                        console.log('📝 Load Example Button Clicked');
+                        
+                        const exampleYAML = `funnel:
   id: "lead_basico"
   start: "intro"
   nodes:
@@ -178,18 +179,62 @@ class WAC_Chat_Post_Types {
         type: event
         name: "lead_capturado"`;
                         
-                        configTextarea.value = exampleYAML;
+                        // Update hidden textarea
+                        const configTextarea = document.getElementById('wac-funnel-config');
+                        if (configTextarea) {
+                            configTextarea.value = exampleYAML;
+                            console.log('✅ Updated hidden textarea');
+                        }
                         
-                        // Try to update the editor if it exists
+                        // Update visible editor
                         const yamlEditor = document.getElementById('yaml-content');
                         if (yamlEditor) {
                             yamlEditor.value = exampleYAML;
+                            console.log('✅ Updated yaml editor');
+                        } else {
+                            console.log('❌ yaml-content element not found');
                         }
                         
-                        alert('Example YAML loaded!');
-                    }
-                });
-            }
+                        // Show success message
+                        const status = document.getElementById('debug-status');
+                        if (status) {
+                            status.innerHTML = '✅ Example YAML loaded! ' + new Date().toLocaleTimeString();
+                        }
+                        
+                        alert('Example YAML loaded! Check the editor and try Force Debug again.');
+                        console.log('📝 Example YAML loaded:', exampleYAML.substring(0, 100) + '...');
+                    });
+                }
+            
+                // Clear editor button
+                const clearBtn = document.getElementById('clear-editor-btn');
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', function() {
+                        console.log('🗑️ Clear Button Clicked');
+                        
+                        // Clear hidden textarea
+                        const configTextarea = document.getElementById('wac-funnel-config');
+                        if (configTextarea) {
+                            configTextarea.value = '';
+                            console.log('✅ Cleared hidden textarea');
+                        }
+                        
+                        // Clear visible editor
+                        const yamlEditor = document.getElementById('yaml-content');
+                        if (yamlEditor) {
+                            yamlEditor.value = '';
+                            console.log('✅ Cleared yaml editor');
+                        }
+                        
+                        // Show success message
+                        const status = document.getElementById('debug-status');
+                        if (status) {
+                            status.innerHTML = '🗑️ Editor cleared! ' + new Date().toLocaleTimeString();
+                        }
+                        
+                        alert('Editor cleared! Now try Load Example again.');
+                    });
+                }
             
                 // Force Debug button
                 const forceDebugBtn = document.getElementById('force-debug-btn');
