@@ -1,10 +1,96 @@
 /**
  * WAC Chat Funnels Admin Interface
- * Editor YAML con preview en vivo - Versión Corregida
+ * Editor YAML con preview en vivo - Versión Robusta
  */
 
 (() => {
   'use strict';
+
+  // === UTILIDADES ROBUSTAS PARA LEER/ESCRIBIR YAML ===
+  function getYamlEl() {
+    return document.querySelector('#yaml-content, #wac-funnel-yaml, [data-wac-yaml], textarea[name="wac_funnel_yaml"]');
+  }
+  
+  function getHiddenEl() {
+    return document.getElementById('wac-funnel-config') || document.querySelector('[name="wac_funnel_config"]');
+  }
+  
+  function getCodeMirror() {
+    const cmHost = document.querySelector('.CodeMirror');
+    return cmHost && cmHost.CodeMirror ? cmHost.CodeMirror : null;
+  }
+  
+  function getMonacoEditor() {
+    if (window.wacMonacoEditor && typeof wacMonacoEditor.getValue === 'function') return window.wacMonacoEditor;
+    if (window.monaco && monaco.editor) {
+      const models = monaco.editor.getModels?.() || [];
+      const editors = monaco.editor.getEditors?.() || [];
+      // Prioriza instancia si existe, si no toma el primer modelo
+      if (editors[0]) return editors[0];
+      if (models[0]) return {
+        getValue: () => models[0].getValue(),
+        setValue: (v) => models[0].setValue(v),
+        onDidChangeModelContent: (fn) => models[0].onDidChangeContent?.(fn)
+      };
+    }
+    return null;
+  }
+  
+  function readYAML() {
+    // 1) CodeMirror
+    const cm = getCodeMirror();
+    if (cm) {
+      const v = cm.getValue();
+      if (v && v.trim()) return v;
+    }
+    // 2) Monaco
+    const me = getMonacoEditor();
+    if (me && typeof me.getValue === 'function') {
+      const v = me.getValue();
+      if (v && v.trim()) return v;
+    }
+    // 3) Textarea / contenteditable
+    const el = getYamlEl();
+    if (el) {
+      let v = typeof el.value === 'string' ? el.value : '';
+      if (!v || !v.trim()) {
+        if (el.getAttribute('contenteditable') === 'true') v = el.textContent || '';
+        else v = el.textContent && !el.value ? el.textContent : v;
+      }
+      if (v && v.trim()) return v;
+    }
+    // 4) Hidden
+    const hidden = getHiddenEl();
+    if (hidden && typeof hidden.value === 'string' && hidden.value.trim()) return hidden.value;
+
+    return '';
+  }
+  
+  function writeYAML(v) {
+    // 1) CodeMirror
+    const cm = getCodeMirror();
+    if (cm) { cm.setValue(v); return; }
+    // 2) Monaco
+    const me = getMonacoEditor();
+    if (me && typeof me.setValue === 'function') { me.setValue(v); return; }
+    // 3) Textarea / contenteditable
+    const el = getYamlEl();
+    if (el) {
+      if (typeof el.value === 'string') el.value = v;
+      else if (el.getAttribute('contenteditable') === 'true') el.textContent = v;
+      else el.textContent = v;
+    }
+    // 4) Hidden espejo
+    const hidden = getHiddenEl();
+    if (hidden && typeof hidden.value === 'string') hidden.value = v;
+  }
+  
+  function hookExternalEditors(onChange) {
+    const cm = getCodeMirror();
+    if (cm) cm.on('change', onChange);
+    const me = getMonacoEditor();
+    if (me && typeof me.onDidChangeModelContent === 'function') me.onDidChangeModelContent(onChange);
+  }
 
   // Utils
   const escapeHTML = (str) =>
@@ -18,143 +104,65 @@
     };
   };
 
+  // Clase principal del editor
   class WACAdminEditor {
     constructor() {
-      this.yamlEditor = null;
-      this.previewContainer = null;
-      this.hiddenConfig = null;
-      this.debounceTimer = null;
-      
-      this.init();
-    }
+      this.previewContainer = document.getElementById('wac-chat-preview')
+        || document.getElementById('wac-preview')
+        || document.getElementById('wac-preview-pane')
+        || document.querySelector('.wac-preview');
 
-    init() {
-      // Esperar a que el DOM esté listo
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => this.initializeEditor());
-      } else {
-        this.initializeEditor();
-      }
-    }
+      this.btnLoad = document.getElementById('wac-load-example') || document.querySelector('[data-wac="load-example"]');
+      this.btnDebug = document.getElementById('wac-test-debug') || document.querySelector('[data-wac="test-debug"]');
 
-    initializeEditor() {
-      try {
-        console.log('🐛 WAC Chat Funnels: Initializing editor...');
-        
-        this.initYAMLEditor();
-        this.initDebugButtons();
-        
-        // Global error handler para capturar errores JavaScript
-        window.addEventListener('error', function(event) {
-          console.error('🚨 Global JavaScript Error:', {
-            message: event.message,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-            error: event.error,
-            stack: event.error ? event.error.stack : 'No stack trace'
-          });
-          
-          // Mostrar en el preview si está disponible
-          const previewContainer = document.getElementById('wac-chat-preview');
-          if (previewContainer) {
-            previewContainer.innerHTML = `
-              <div style="padding: 20px; color: #d63638; background: #fcf0f1; border-radius: 4px;">
-                <h3 style="margin: 0 0 10px 0;">🚨 JavaScript Error Captured</h3>
-                <p><strong>Message:</strong> ${escapeHTML(event.message)}</p>
-                <p><strong>File:</strong> ${escapeHTML(event.filename)}</p>
-                <p><strong>Line:</strong> ${event.lineno}:${event.colno}</p>
-                <p><strong>Error:</strong> ${escapeHTML(event.error ? event.error.toString() : 'No error object')}</p>
-                <p style="margin-top: 10px; font-size: 12px;">Check browser console (F12) for full stack trace.</p>
-              </div>
-            `;
-          }
-        });
-        
-        console.log('✅ WAC Chat Funnels: Editor initialized successfully');
-      } catch (error) {
-        console.error('❌ WAC Chat Funnels: Failed to initialize editor:', error);
-      }
-    }
+      // Valor inicial seguro (evita "undefined/null")
+      const hidden = getHiddenEl();
+      let initial = hidden && typeof hidden.value === 'string' ? hidden.value : '';
+      if (initial.trim() === 'undefined' || initial.trim() === 'null') initial = '';
+      if (initial) writeYAML(initial);
 
-    initYAMLEditor() {
-      const editorElement = document.getElementById('wac-yaml-editor');
-      if (!editorElement) return;
-
-      // Obtener el valor del textarea oculto de forma segura
-      this.hiddenConfig = document.getElementById('wac-funnel-config');
-      let configValue = (this.hiddenConfig && typeof this.hiddenConfig.value === 'string') ? this.hiddenConfig.value : '';
-      if (configValue.trim() === 'undefined' || configValue.trim() === 'null') configValue = '';
-
-      // Simple textarea editor for now
-      // In production, you'd integrate Monaco Editor
-      editorElement.innerHTML = `
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-          <button id="debug-btn" type="button" class="button">🐛 Debug Info</button>
-          <button id="clear-editor" type="button" class="button">🗑️ Limpiar</button>
-          <button id="load-example" type="button" class="button">📝 Cargar Ejemplo</button>
-        </div>
-        <textarea id="yaml-content" style="width: 100%; height: calc(100% - 50px); border: none; outline: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px; resize: none;">${escapeHTML(configValue)}</textarea>
-      `;
-
-      this.yamlEditor = document.getElementById('yaml-content');
-      this.previewContainer = document.getElementById('wac-chat-preview');
-      
-      // Sincronizar con el textarea oculto
-      if (this.yamlEditor && this.hiddenConfig) {
-        this.yamlEditor.addEventListener('input', () => {
-          this.hiddenConfig.value = this.yamlEditor.value;
+      // Listeners
+      const yamlEl = getYamlEl();
+      if (yamlEl) {
+        const onUiChange = () => {
+          const v = readYAML();
+          if (hidden) hidden.value = v;
           this.debouncedPreview();
-        });
+        };
+        yamlEl.addEventListener('input', onUiChange);
+        yamlEl.addEventListener('keyup', onUiChange);
       }
-      
-      this.initDebugButtons();
-      
-      // Primera pintura de preview
+      hookExternalEditors(() => {
+        const v = readYAML();
+        if (hidden) hidden.value = v;
+        this.debouncedPreview();
+      });
+
+      if (this.btnLoad) this.btnLoad.addEventListener('click', () => this.loadExample());
+      if (this.btnDebug) this.btnDebug.addEventListener('click', () => this.testDebug());
+
       this.updatePreview();
-    }
-
-    initDebugButtons() {
-      // Botón Debug Info
-      const debugBtn = document.getElementById('debug-btn');
-      if (debugBtn) {
-        debugBtn.addEventListener('click', () => {
-          this.showDebugInfo();
-        });
-      }
-
-      // Botón Limpiar
-      const clearBtn = document.getElementById('clear-editor');
-      if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-          this.clearEditor();
-        });
-      }
-
-      // Botón Cargar Ejemplo
-      const exampleBtn = document.getElementById('load-example');
-      if (exampleBtn) {
-        exampleBtn.addEventListener('click', () => {
-          this.loadExampleYAML();
-        });
-      }
     }
 
     debouncedPreview = debounce(() => this.updatePreview(), 350);
 
     async updatePreview() {
-      const yaml = this.yamlEditor ? this.yamlEditor.value : '';
+      const yaml = readYAML();
+      // espejo al hidden por si guardas el post
+      const hidden = getHiddenEl();
+      if (hidden) hidden.value = yaml;
+
       if (!yaml.trim()) {
         return this.renderInfo('Pega un YAML para ver la vista previa.');
       }
-      
-      const result = await this.validateYAML(yaml);
-      if (!result.valid) return this.renderError(result);
-      this.renderSuccess(result);
+
+      const res = await this.validateYAML(yaml);
+      if (!res.valid) return this.renderError(res);
+      this.renderSuccess(res);
     }
 
     async validateYAML(yaml) {
-      const url = (window.wacChatAdmin && wacChatAdmin.rest_url) 
+      const url = (window.wacChatAdmin && (wacChatAdmin.rest_url)) 
         ? wacChatAdmin.rest_url + 'validate-yaml'
         : '/wp-json/wac-chat/v1/validate-yaml';
 
@@ -165,59 +173,29 @@
 
       let raw;
       try {
-        const resp = await fetch(url, { 
-          method: 'POST', 
-          headers, 
-          body: JSON.stringify({ yaml }) 
-        });
-        raw = await resp.json();
+        const r = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ yaml }) });
+        raw = await r.json();
       } catch (e) {
-        return { 
-          valid: false, 
-          message: 'No se pudo contactar el validador.', 
-          errors: [e.message] 
-        };
+        return { valid: false, message: 'No se pudo contactar el validador.', errors: [e.message] };
       }
 
-      // Normalización robusta de errores (para evitar .join sobre undefined)
       let errs = [];
       if (Array.isArray(raw?.errors)) errs = raw.errors;
-      else if (Array.isArray(raw?.data)) errs = raw.data;
       else if (Array.isArray(raw?.data?.errors)) errs = raw.data.errors;
       else if (raw?.errors && typeof raw.errors === 'object') errs = Object.values(raw.errors).flat();
       else if (!raw.valid && typeof raw.message === 'string') errs = [raw.message];
 
-      return {
-        valid: !!raw.valid,
-        message: raw.message || '',
-        errors: errs,
-        config: raw.config || null,
-        preview: raw.preview || null,
-      };
+      return { valid: !!raw.valid, message: raw.message || '', errors: errs, config: raw.config || null, preview: raw.preview || null };
     }
 
     renderInfo(msg) {
       if (!this.previewContainer) return;
-      this.previewContainer.innerHTML =
-        `<div style="padding:12px;background:#f6f7f7;border-radius:6px;color:#555;">${escapeHTML(msg)}</div>`;
+      this.previewContainer.innerHTML = `<div style="padding:12px;background:#f6f7f7;border-radius:6px;color:#555;">${escapeHTML(String(msg))}</div>`;
     }
 
     renderError(result) {
-      // Manejo robusto de errores para evitar .join sobre undefined
-      const errorList = Array.isArray(result.errors)
-        ? result.errors
-        : (result?.data && Array.isArray(result.data))
-            ? result.data
-            : (result?.data && Array.isArray(result.data?.errors))
-                ? result.data.errors
-                : (result?.errors && typeof result.errors === 'object')
-                    ? Object.values(result.errors).flat()
-                    : (result?.errors ? [String(result.errors)] : []);
-
-      const errorHTML = errorList.length
-        ? errorList.map(escapeHTML).join('<br>')
-        : escapeHTML(result.message || 'Error desconocido');
-
+      const list = Array.isArray(result.errors) ? result.errors : (result.errors ? [String(result.errors)] : []);
+      const html = list.length ? list.map(escapeHTML).join('<br>') : escapeHTML(result.message || 'Error desconocido');
       if (!this.previewContainer) return;
       this.previewContainer.innerHTML = `
         <div style="padding:16px;color:#d63638;background:#fcf0f1;border:1px solid #f5c2c7;border-radius:6px;">
@@ -227,7 +205,7 @@
               🔍 Debug Error
             </button>
           </div>
-          <div>${errorHTML}</div>
+          <div>${html}</div>
         </div>`;
       
       // Agregar listener al botón de debug de error
@@ -241,12 +219,10 @@
 
     renderSuccess(result) {
       if (!this.previewContainer) return;
-      // Si el servidor devuelve HTML de preview, úsalo
       if (result.preview && typeof result.preview === 'string') {
         this.previewContainer.innerHTML = result.preview;
         return;
       }
-      // Si no, muestra el objeto validado (útil para debug)
       const pretty = escapeHTML(JSON.stringify(result.config, null, 2));
       this.previewContainer.innerHTML = `
         <div style="padding:12px;background:#f6fff6;border:1px solid #b7ebc6;border-radius:6px;">
@@ -255,8 +231,8 @@
         </div>`;
     }
 
-    loadExampleYAML() {
-      const exampleYAML = `funnel:
+    loadExample() {
+      const example = `funnel:
   id: "lead_basico"
   start: "intro"
   nodes:
@@ -305,51 +281,27 @@
       action:
         type: event
         name: "lead_capturado"`;
-
-      if (this.yamlEditor) {
-        this.yamlEditor.value = exampleYAML;
-      }
-      if (this.hiddenConfig) {
-        this.hiddenConfig.value = exampleYAML;
-      }
+      
+      writeYAML(example);
+      const hidden = getHiddenEl();
+      if (hidden) hidden.value = example;
       this.updatePreview();
     }
 
-    clearEditor() {
-      if (this.yamlEditor) {
-        this.yamlEditor.value = '';
-      }
-      if (this.hiddenConfig) {
-        this.hiddenConfig.value = '';
-      }
-      this.updatePreview();
-    }
-
-    showDebugInfo() {
-      const debugInfo = {
-        yamlEditor: !!this.yamlEditor,
-        previewContainer: !!this.previewContainer,
-        hiddenConfig: !!this.hiddenConfig,
-        wacChatAdmin: !!window.wacChatAdmin,
-        restUrl: window.wacChatAdmin ? window.wacChatAdmin.rest_url : 'No disponible',
-        nonce: window.wacChatAdmin ? window.wacChatAdmin.nonce : 'No disponible'
-      };
-
-      const basicInfo = `🐛 WAC Chat Funnels Debug Info:
-- YAML Editor: ${debugInfo.yamlEditor}
-- Preview Container: ${debugInfo.previewContainer}
-- Hidden Config: ${debugInfo.hiddenConfig}
-- WAC Admin Object: ${debugInfo.wacChatAdmin}
-- REST URL: ${debugInfo.restUrl}
-- Nonce: ${debugInfo.nonce}`;
-      
-      console.log('🐛 WAC Chat Funnels Debug Info:', debugInfo);
-      
-      alert(basicInfo + '\n\nFull details logged to console (F12).');
+    testDebug() {
+      const yaml = readYAML();
+      console.log('🚨 Force Debug YAML');
+      console.log('len:', yaml.length, 'first 60:', yaml.slice(0, 60).replace(/\n/g,'⏎'));
+      alert(
+`🚨 Force Debug YAML
+Longitud: ${yaml.length}
+Primeras líneas:
+${yaml.split('\n').slice(0,5).map((l,i)=>`${i+1}: ${l||'(vacío)'}`).join('\n')}`
+      );
     }
 
     debugYAMLError(errorResult) {
-      const yaml = this.yamlEditor ? this.yamlEditor.value : '';
+      const yaml = readYAML();
       
       // Información detallada del error
       const debugInfo = {
@@ -441,7 +393,8 @@ ${escapeHTML(JSON.stringify(errorResult, null, 2))}
   document.addEventListener('DOMContentLoaded', () => {
     try {
       window.WACAdminEditor = new WACAdminEditor();
-      console.log('✅ WACAdminEditor initialized');
+      window.wacChatAdmin = window.WACAdminEditor; // Alias para compatibilidad
+      console.log('✅ WACAdminEditor initialized with robust YAML handling');
     } catch (error) {
       console.error('❌ Failed to initialize WACAdminEditor:', error);
     }
