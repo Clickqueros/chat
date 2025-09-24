@@ -100,10 +100,10 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
         }
         
         try {
-            // Validar YAML básico
-            $parsed = yaml_parse($yaml_content);
+            // Parsear YAML usando un parser simple
+            $parsed = self::simple_yaml_parse($yaml_content);
             
-            if ($parsed === false) {
+            if ($parsed === null) {
                 return new WP_Error('invalid_yaml', __('YAML inválido', 'wac-chat-funnels'), array('status' => 400));
             }
             
@@ -113,7 +113,8 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
             if ($validation_result['valid']) {
                 return rest_ensure_response(array(
                     'valid' => true,
-                    'message' => __('YAML válido', 'wac-chat-funnels')
+                    'message' => __('YAML válido', 'wac-chat-funnels'),
+                    'config' => $parsed
                 ));
             } else {
                 return rest_ensure_response(array(
@@ -128,6 +129,76 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
         }
     }
     
+    private static function simple_yaml_parse($yaml_string) {
+        // Parser YAML simple para nuestro caso específico
+        $lines = explode("\n", $yaml_string);
+        $result = array();
+        $current_path = array();
+        $current_node = '';
+        
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if (empty($trimmed) || strpos($trimmed, '#') === 0) {
+                continue;
+            }
+            
+            $indent = strlen($line) - strlen(ltrim($line));
+            $path_level = $indent / 2;
+            
+            if (strpos($trimmed, ':') !== false) {
+                list($key, $value) = explode(':', $trimmed, 2);
+                $key = trim($key);
+                $value = trim($value);
+                
+                // Ajustar el path actual basado en la indentación
+                $current_path = array_slice($current_path, 0, $path_level);
+                
+                if ($path_level === 0) {
+                    // Nivel raíz
+                    if ($key === 'funnel') {
+                        $current_path = array('funnel');
+                        $result['funnel'] = array();
+                    }
+                } else if ($path_level === 1) {
+                    // Nivel funnel
+                    if (in_array($key, array('id', 'start'))) {
+                        $result['funnel'][$key] = trim($value, '"\'');
+                    } else if ($key === 'nodes') {
+                        $current_path[] = 'nodes';
+                        $result['funnel']['nodes'] = array();
+                    }
+                } else if ($path_level === 2 && end($current_path) === 'nodes') {
+                    // Nivel nodos
+                    if (empty($value)) {
+                        $current_node = $key;
+                        $result['funnel']['nodes'][$current_node] = array();
+                    } else {
+                        $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                    }
+                } else if ($path_level === 3) {
+                    // Nivel propiedades de nodos
+                    if ($key === 'options' && empty($value)) {
+                        $result['funnel']['nodes'][$current_node]['options'] = array();
+                    } else if (isset($result['funnel']['nodes'][$current_node]['options'])) {
+                        // Manejar opciones
+                        if ($key === 'label') {
+                            $result['funnel']['nodes'][$current_node]['options'][] = array('label' => trim($value, '"\''));
+                        } else {
+                            $last_index = count($result['funnel']['nodes'][$current_node]['options']) - 1;
+                            if ($last_index >= 0) {
+                                $result['funnel']['nodes'][$current_node]['options'][$last_index][$key] = trim($value, '"\'');
+                            }
+                        }
+                    } else {
+                        $result['funnel']['nodes'][$current_node][$key] = trim($value, '"\'');
+                    }
+                }
+            }
+        }
+        
+        return $result;
+    }
+    
     public function preview_funnel($request) {
         $yaml_content = $request->get_param('yaml');
         
@@ -136,9 +207,9 @@ class WAC_Chat_REST_Controller extends WP_REST_Controller {
         }
         
         try {
-            $parsed = yaml_parse($yaml_content);
+            $parsed = self::simple_yaml_parse($yaml_content);
             
-            if ($parsed === false) {
+            if ($parsed === null) {
                 return new WP_Error('invalid_yaml', __('YAML inválido', 'wac-chat-funnels'), array('status' => 400));
             }
             
