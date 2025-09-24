@@ -22,8 +22,33 @@ define('WAC_CHAT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WAC_CHAT_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WAC_CHAT_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
-// Cargar el autoloader
-require_once WAC_CHAT_PLUGIN_DIR . 'includes/class-autoloader.php';
+// Función para cargar clases
+function wac_chat_funnels_load_classes() {
+    $classes = array(
+        'WAC_Chat_Autoloader' => 'class-autoloader.php',
+        'WAC_Chat_Funnels' => 'class-wac-chat-funnels.php',
+        'WAC_Chat_Post_Types' => 'class-post-types.php',
+        'WAC_Chat_Roles' => 'class-roles.php',
+        'WAC_Chat_Database' => 'class-database.php',
+        'WAC_Chat_REST_Controller' => 'class-rest-controller.php',
+        'WAC_Chat_Rules' => 'class-rules.php',
+        'WAC_Chat_Analytics' => 'class-analytics.php',
+        'WAC_Chat_Metaboxes' => 'class-metaboxes.php',
+        'WAC_Chat_Admin' => 'class-admin.php',
+        'WAC_Chat_Webhooks' => 'class-webhooks.php',
+        'WAC_Chat_Leads' => 'class-leads.php'
+    );
+
+    foreach ($classes as $class_name => $file_name) {
+        $file_path = WAC_CHAT_PLUGIN_DIR . 'includes/' . $file_name;
+        if (file_exists($file_path)) {
+            require_once $file_path;
+        }
+    }
+}
+
+// Cargar clases
+wac_chat_funnels_load_classes();
 
 // Inicializar el plugin
 function wac_chat_funnels_init() {
@@ -40,7 +65,9 @@ function wac_chat_funnels_init() {
     }
 
     // Inicializar el plugin principal
-    WAC_Chat_Funnels::get_instance();
+    if (class_exists('WAC_Chat_Funnels')) {
+        WAC_Chat_Funnels::get_instance();
+    }
 }
 add_action('plugins_loaded', 'wac_chat_funnels_init');
 
@@ -60,11 +87,18 @@ function wac_chat_funnels_php_notice() {
 // Hook de activación
 register_activation_hook(__FILE__, 'wac_chat_funnels_activate');
 function wac_chat_funnels_activate() {
+    // Cargar clases necesarias
+    wac_chat_funnels_load_classes();
+    
     // Crear tablas personalizadas si es necesario
-    WAC_Chat_Database::create_tables();
+    if (class_exists('WAC_Chat_Database')) {
+        WAC_Chat_Database::create_tables();
+    }
     
     // Crear roles y capacidades
-    WAC_Chat_Roles::create_capabilities();
+    if (class_exists('WAC_Chat_Roles')) {
+        WAC_Chat_Roles::create_capabilities();
+    }
     
     // Flush rewrite rules
     flush_rewrite_rules();
@@ -80,6 +114,11 @@ function wac_chat_funnels_deactivate() {
 // Hook de desinstalación
 register_uninstall_hook(__FILE__, 'wac_chat_funnels_uninstall');
 function wac_chat_funnels_uninstall() {
+    // Cargar clases necesarias
+    wac_chat_funnels_load_classes();
+    
     // Limpiar datos si es necesario
-    WAC_Chat_Database::drop_tables();
+    if (class_exists('WAC_Chat_Database')) {
+        WAC_Chat_Database::drop_tables();
+    }
 }

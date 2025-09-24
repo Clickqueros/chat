@@ -182,7 +182,7 @@ class WAC_Chat_Funnels {
     }
     
     private function load_dependencies() {
-        // Cargar todas las clases necesarias
-        WAC_Chat_Autoloader::load_classes();
+        // Las clases ya están cargadas por el archivo principal
+        // No necesitamos cargar nada más aquí
     }
 }
