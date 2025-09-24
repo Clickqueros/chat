@@ -1,0 +1,62 @@
+funnel:
+  id: "lead_basico"
+  start: "intro"
+  nodes:
+    intro:
+      type: message
+      text: |
+        ¡Hola! Soy **Asistente WACosta** 👋
+        ¿En qué puedo ayudarte hoy?
+      next: menu
+
+    menu:
+      type: question
+      style: choice
+      text: "Selecciona una opción:"
+      options:
+        - label: "Quiero cotización"
+          next: form_nombre
+        - label: "Ver portafolio"
+          action: redirect
+          url: "/portafolio"
+        - label: "Hablar por WhatsApp"
+          action: whatsapp
+          phone: "+573154543344"
+          prefill: "Hola, quiero una asesoría personalizada."
+
+    form_nombre:
+      type: question
+      style: input
+      validation: "name"
+      store_as: "nombre"
+      text: "¿Cuál es tu nombre completo?"
+      next: form_email
+
+    form_email:
+      type: question
+      style: input
+      validation: "email"
+      store_as: "email"
+      text: "¿Cuál es tu email?"
+      next: form_telefono
+
+    form_telefono:
+      type: question
+      style: input
+      validation: "phone"
+      store_as: "telefono"
+      text: "¿Cuál es tu número de WhatsApp?"
+      next: gracias
+
+    gracias:
+      type: message
+      text: |
+        ¡Gracias **{{nombre}}**! 
+        
+        He recibido tu información:
+        📧 {{email}}
+        📱 {{telefono}}
+        
+        Te contactaré pronto para darte una cotización personalizada.
+      action: event
+      event_name: "lead_capturado"
