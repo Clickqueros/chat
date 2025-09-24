@@ -29,10 +29,158 @@ class WACAdminEditor {
     // Simple textarea editor for now
     // In production, you'd integrate Monaco Editor
     editorElement.innerHTML = `
-      <textarea id="yaml-content" style="width: 100%; height: 100%; border: none; outline: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px; resize: none;">${configValue}</textarea>
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <button id="debug-btn" type="button" class="button">🐛 Debug Info</button>
+        <button id="clear-editor" type="button" class="button">🗑️ Limpiar</button>
+        <button id="load-example" type="button" class="button">📝 Cargar Ejemplo</button>
+      </div>
+      <textarea id="yaml-content" style="width: 100%; height: calc(100% - 50px); border: none; outline: none; font-family: 'Courier New', monospace; font-size: 13px; padding: 10px; resize: none;">${configValue}</textarea>
     `;
 
     this.yamlEditor = document.getElementById('yaml-content');
+    this.initDebugButtons();
+  }
+
+  initDebugButtons() {
+    // Botón Debug Info
+    const debugBtn = document.getElementById('debug-btn');
+    if (debugBtn) {
+      debugBtn.addEventListener('click', () => {
+        this.showDebugInfo();
+      });
+    }
+
+    // Botón Limpiar
+    const clearBtn = document.getElementById('clear-editor');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', () => {
+        if (this.yamlEditor) {
+          this.yamlEditor.value = '';
+          this.updatePreview();
+        }
+      });
+    }
+
+    // Botón Cargar Ejemplo
+    const exampleBtn = document.getElementById('load-example');
+    if (exampleBtn) {
+      exampleBtn.addEventListener('click', () => {
+        this.loadExampleYAML();
+      });
+    }
+  }
+
+  showDebugInfo() {
+    // Probar la función validateYAML para ver si hay errores
+    let validationTest = null;
+    if (this.yamlEditor && this.yamlEditor.value.trim()) {
+      try {
+        this.validateYAML(this.yamlEditor.value).then(result => {
+          console.log('🔍 Validation test result:', result);
+        }).catch(error => {
+          console.error('❌ Validation test error:', error);
+        });
+      } catch (error) {
+        console.error('❌ Validation test catch error:', error);
+      }
+    }
+
+    const debugInfo = {
+      'yamlEditor': !!this.yamlEditor,
+      'previewContainer': !!this.previewContainer,
+      'rulesContainer': !!this.rulesContainer,
+      'wacChatAdmin': typeof wacChatAdmin !== 'undefined',
+      'wacChatAdmin.apiUrl': typeof wacChatAdmin !== 'undefined' ? wacChatAdmin.apiUrl : 'undefined',
+      'wacChatAdmin.apiNonce': typeof wacChatAdmin !== 'undefined' ? wacChatAdmin.apiNonce : 'undefined',
+      'yamlContent': this.yamlEditor ? this.yamlEditor.value.length : 0,
+      'yamlValue': this.yamlEditor ? this.yamlEditor.value.substring(0, 100) + '...' : 'undefined',
+      'configTextarea': !!document.getElementById('wac-funnel-config'),
+      'configValue': document.getElementById('wac-funnel-config') ? document.getElementById('wac-funnel-config').value.substring(0, 100) + '...' : 'undefined',
+      'DOM Ready': document.readyState,
+      'Current URL': window.location.href,
+      'User Agent': navigator.userAgent,
+      'Timestamp': new Date().toLocaleString()
+    };
+
+    console.log('🐛 WAC Chat Funnels Debug Info:', debugInfo);
+    
+    // Mostrar en el preview también
+    if (this.previewContainer) {
+      let debugHTML = '<div style="padding: 20px; background: #f0f0f1; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto;">';
+      debugHTML += '<h3 style="margin: 0 0 15px 0;">🐛 Debug Information</h3>';
+      
+      Object.entries(debugInfo).forEach(([key, value]) => {
+        const displayValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : value;
+        debugHTML += `<div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px;"><strong>${key}:</strong><br><code style="word-break: break-all;">${displayValue}</code></div>`;
+      });
+      
+      debugHTML += '</div>';
+      this.previewContainer.innerHTML = debugHTML;
+    }
+
+    // También mostrar un alert con información básica
+    const basicInfo = `Debug Info:
+- YAML Editor: ${debugInfo.yamlEditor ? '✓' : '✗'}
+- Preview Container: ${debugInfo.previewContainer ? '✓' : '✗'}
+- wacChatAdmin: ${debugInfo.wacChatAdmin ? '✓' : '✗'}
+- YAML Content Length: ${debugInfo.yamlContent}
+- DOM Ready: ${debugInfo.DOMReady}`;
+    
+    alert(basicInfo + '\n\nFull details logged to console (F12).');
+  }
+
+  loadExampleYAML() {
+    const exampleYAML = `funnel:
+  id: "lead_basico"
+  start: "intro"
+  nodes:
+    intro:
+      type: message
+      text: |
+        ¡Hola! Soy **Asistente WACosta** 👋
+        ¿En qué puedo ayudarte hoy?
+      next: menu
+
+    menu:
+      type: question
+      style: choice
+      options:
+        - label: "Quiero cotización"
+          next: form_nombre
+        - label: "Ver portafolio"
+          action: redirect
+          url: "/portafolio"
+        - label: "Hablar por WhatsApp"
+          action: whatsapp
+          phone: "+573154543344"
+          prefill: "Hola, quiero una asesoría."
+
+    form_nombre:
+      type: question
+      style: input
+      validation: "name"
+      store_as: "nombre"
+      text: "¿Cuál es tu nombre?"
+      next: form_email
+
+    form_email:
+      type: question
+      style: input
+      validation: "email"
+      store_as: "email"
+      text: "¿Cuál es tu email?"
+      next: gracias
+
+    gracias:
+      type: message
+      text: "¡Gracias {{nombre}}! Te escribo al correo {{email}} en breve."
+      action: event
+      event_name: "lead_capturado"`;
+
+    if (this.yamlEditor) {
+      this.yamlEditor.value = exampleYAML;
+      this.updatePreview();
+    }
   }
 
   initPreview() {
@@ -409,12 +557,43 @@ class WACAdminEditor {
   }
 }
 
+// Global error handler para capturar errores JavaScript
+window.addEventListener('error', function(event) {
+  console.error('🚨 Global JavaScript Error:', {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno,
+    error: event.error,
+    stack: event.error ? event.error.stack : 'No stack trace'
+  });
+  
+  // Mostrar en el preview si está disponible
+  const previewContainer = document.getElementById('wac-chat-preview');
+  if (previewContainer) {
+    previewContainer.innerHTML = `
+      <div style="padding: 20px; color: #d63638; background: #fcf0f1; border-radius: 4px;">
+        <h3 style="margin: 0 0 10px 0;">🚨 JavaScript Error Captured</h3>
+        <p><strong>Message:</strong> ${event.message}</p>
+        <p><strong>File:</strong> ${event.filename}</p>
+        <p><strong>Line:</strong> ${event.lineno}:${event.colno}</p>
+        <p><strong>Error:</strong> ${event.error ? event.error.toString() : 'No error object'}</p>
+        <p style="margin-top: 10px; font-size: 12px;">Check browser console (F12) for full stack trace.</p>
+      </div>
+    `;
+  }
+});
+
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   // Esperar un poco más para asegurar que todos los elementos estén disponibles
   setTimeout(() => {
-    if (document.getElementById('wac-funnel-editor')) {
-      new WACAdminEditor();
+    try {
+      if (document.getElementById('wac-funnel-editor')) {
+        new WACAdminEditor();
+      }
+    } catch (error) {
+      console.error('❌ Error initializing WACAdminEditor:', error);
     }
   }, 100);
 });
@@ -423,16 +602,24 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
-      if (document.getElementById('wac-funnel-editor')) {
-        new WACAdminEditor();
+      try {
+        if (document.getElementById('wac-funnel-editor')) {
+          new WACAdminEditor();
+        }
+      } catch (error) {
+        console.error('❌ Error initializing WACAdminEditor (DOM loading):', error);
       }
     }, 100);
   });
 } else {
   // DOM ya está listo
   setTimeout(() => {
-    if (document.getElementById('wac-funnel-editor')) {
-      new WACAdminEditor();
+    try {
+      if (document.getElementById('wac-funnel-editor')) {
+        new WACAdminEditor();
+      }
+    } catch (error) {
+      console.error('❌ Error initializing WACAdminEditor (DOM ready):', error);
     }
   }, 100);
 }
