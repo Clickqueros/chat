@@ -113,6 +113,9 @@ class WAC_Chat_Funnels {
         $teaser_delay = get_post_meta($post->ID, '_wac_funnel_teaser_delay', true);
         $whatsapp_number = get_post_meta($post->ID, '_wac_funnel_whatsapp_number', true);
         
+        // Cargar configuración del funnel guardada
+        $saved_steps = get_post_meta($post->ID, '_wac_funnel_steps_data', true);
+        
         // Valores por defecto
         if (empty($teaser_text)) $teaser_text = '¿Necesitas ayuda?';
         if (empty($teaser_delay)) $teaser_delay = 3000;
@@ -266,7 +269,14 @@ class WAC_Chat_Funnels {
                 <button type="button" class="button button-primary" onclick="addNewStep()">+ Agregar Paso</button>
                 <button type="button" class="button" onclick="previewFunnel()">👁️ Vista Previa</button>
                 <button type="button" class="button button-secondary" onclick="saveFunnelConfig()">💾 Guardar Funnel</button>
+                <button type="button" class="button" onclick="loadFunnelConfig()">🔄 Cargar Config</button>
                 <button type="button" class="button" onclick="resetToDefault()">🔄 Restaurar Por Defecto</button>
+            </div>
+            
+            <div class="wac-debug-info" style="margin-top: 15px; padding: 10px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; font-size: 12px;">
+                <strong>Debug Info:</strong>
+                <button type="button" class="button button-small" onclick="debugFunnelData()" style="margin-left: 10px;">🔍 Ver Datos</button>
+                <button type="button" class="button button-small" onclick="clearFunnelData()" style="margin-left: 5px;">🗑️ Limpiar</button>
             </div>
             
             <div class="wac-save-notice" id="wac-save-notice" style="display:none;">
@@ -288,6 +298,11 @@ class WAC_Chat_Funnels {
         
         <!-- Campos ocultos para guardar la configuración del funnel -->
         <input type="hidden" name="wac_funnel_steps" id="wac-funnel-steps-hidden" value="" />
+        
+        <!-- Script para pasar datos guardados al JavaScript -->
+        <script type="text/javascript">
+            var wacSavedSteps = <?php echo json_encode($saved_steps ?: array()); ?>;
+        </script>
         
         <style>
         #wac-funnel-builder {
@@ -603,15 +618,31 @@ class WAC_Chat_Funnels {
         }
         
         function loadFunnelConfig() {
-            // Esta función cargaría la configuración guardada
-            // Por ahora solo muestra un mensaje
-            alert('🔄 Funcionalidad de carga en desarrollo. Los cambios se guardan automáticamente al actualizar el post.');
+            // Recargar la configuración guardada
+            loadSavedConfiguration();
+            
+            // Mostrar mensaje de confirmación
+            const notice = document.getElementById('wac-save-notice');
+            if (notice) {
+                notice.innerHTML = '<p>🔄 <strong>Configuración recargada!</strong> Se han restaurado los datos guardados.</p>';
+                notice.style.display = 'block';
+                notice.style.background = '#fff3cd';
+                notice.style.color = '#856404';
+                notice.style.border = '1px solid #ffeaa7';
+                
+                setTimeout(() => {
+                    notice.style.display = 'none';
+                }, 3000);
+            }
         }
         
         // Auto-guardar cada vez que se hace un cambio
         document.addEventListener('DOMContentLoaded', function() {
             const editorContainer = document.getElementById('wac-funnel-builder');
             if (editorContainer) {
+                // Cargar configuración guardada al inicializar
+                loadSavedConfiguration();
+                
                 editorContainer.addEventListener('input', function() {
                     // Auto-guardar cada 2 segundos después del último cambio
                     clearTimeout(window.autoSaveTimeout);
@@ -619,6 +650,82 @@ class WAC_Chat_Funnels {
                 });
             }
         });
+        
+        function loadSavedConfiguration() {
+            // Verificar si hay datos guardados
+            if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
+                console.log('Cargando configuración guardada:', wacSavedSteps);
+                
+                // Aplicar los datos guardados a los campos del editor
+                Object.keys(wacSavedSteps).forEach(fieldName => {
+                    const field = document.querySelector(`[name="${fieldName}"]`);
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            field.checked = wacSavedSteps[fieldName];
+                        } else {
+                            field.value = wacSavedSteps[fieldName];
+                        }
+                    }
+                });
+                
+                // Mostrar notificación de carga
+                const notice = document.getElementById('wac-save-notice');
+                if (notice) {
+                    notice.innerHTML = '<p>✅ <strong>Configuración cargada!</strong> Se han restaurado tus cambios guardados.</p>';
+                    notice.style.display = 'block';
+                    notice.style.background = '#d1ecf1';
+                    notice.style.color = '#0c5460';
+                    notice.style.border = '1px solid #bee5eb';
+                    
+                    setTimeout(() => {
+                        notice.style.display = 'none';
+                    }, 4000);
+                }
+            } else {
+                console.log('No hay configuración guardada, usando valores por defecto');
+            }
+        }
+        
+        function debugFunnelData() {
+            const currentData = collectFunnelData();
+            const savedData = typeof wacSavedSteps !== 'undefined' ? wacSavedSteps : 'No hay datos guardados';
+            
+            alert(`🔍 DEBUG INFO:
+
+📊 DATOS ACTUALES DEL EDITOR:
+${JSON.stringify(currentData, null, 2)}
+
+💾 DATOS GUARDADOS EN BD:
+${JSON.stringify(savedData, null, 2)}
+
+📝 CAMPOS ENCONTRADOS:
+${Object.keys(currentData).length} campos
+
+Ver consola para más detalles.`);
+            
+            console.log('=== DEBUG FUNNEL DATA ===');
+            console.log('Current editor data:', currentData);
+            console.log('Saved data from DB:', savedData);
+            console.log('Hidden field value:', document.getElementById('wac-funnel-steps-hidden').value);
+        }
+        
+        function clearFunnelData() {
+            if (confirm('¿Estás seguro de limpiar todos los datos del funnel?')) {
+                // Limpiar campos
+                document.querySelectorAll('#wac-funnel-builder input, #wac-funnel-builder select, #wac-funnel-builder textarea').forEach(field => {
+                    if (field.type === 'checkbox') {
+                        field.checked = false;
+                    } else {
+                        field.value = '';
+                    }
+                });
+                
+                // Limpiar campo oculto
+                document.getElementById('wac-funnel-steps-hidden').value = '';
+                
+                alert('🗑️ Datos del funnel limpiados.');
+            }
+        }
         
         // Manejar cambios en selects de acción
         document.addEventListener('change', function(e) {
