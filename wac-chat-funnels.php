@@ -605,25 +605,60 @@ class WAC_Chat_Funnels {
         }
         
         function updateStepType(stepId, type) {
+            console.log(`Cambiando tipo de paso ${stepId} a: ${type}`);
+            
             const contentDiv = document.getElementById(`${stepId}_content`);
             const optionsDiv = document.getElementById(`${stepId}_options`);
             const formDiv = document.getElementById(`${stepId}_form`);
             
-            if (!contentDiv) return;
+            if (!contentDiv) {
+                console.error('No se encontró el contenedor de contenido:', `${stepId}_content`);
+                return;
+            }
             
             // Ocultar todas las secciones específicas
-            if (optionsDiv) optionsDiv.style.display = 'none';
-            if (formDiv) formDiv.style.display = 'none';
+            if (optionsDiv) {
+                optionsDiv.style.display = 'none';
+                console.log('Ocultando opciones');
+            }
+            if (formDiv) {
+                formDiv.style.display = 'none';
+                console.log('Ocultando formulario');
+            }
             
             // Mostrar la sección correspondiente al tipo
             switch(type) {
                 case 'question':
-                    if (optionsDiv) optionsDiv.style.display = 'block';
+                    if (optionsDiv) {
+                        optionsDiv.style.display = 'block';
+                        console.log('Mostrando opciones para pregunta');
+                    } else {
+                        console.error('No se encontró el div de opciones');
+                    }
                     break;
                 case 'form':
-                    if (formDiv) formDiv.style.display = 'block';
+                    if (formDiv) {
+                        formDiv.style.display = 'block';
+                        console.log('Mostrando formulario');
+                    } else {
+                        console.error('No se encontró el div de formulario');
+                    }
                     break;
+                case 'message':
+                    console.log('Tipo mensaje - sin secciones adicionales');
+                    break;
+                case 'redirect':
+                    console.log('Tipo redirección - sin secciones adicionales');
+                    break;
+                default:
+                    console.log('Tipo no reconocido:', type);
             }
+            
+            // Forzar actualización visual
+            contentDiv.style.display = 'none';
+            setTimeout(() => {
+                contentDiv.style.display = 'block';
+            }, 10);
         }
         
         function addOptionToStep(stepId) {
@@ -920,6 +955,9 @@ class WAC_Chat_Funnels {
         }
         
         function generateStepHTML(stepNumber, stepId, type) {
+            const optionsDisplay = type === 'question' ? 'block' : 'none';
+            const formDisplay = type === 'form' ? 'block' : 'none';
+            
             return `
                 <div class="wac-step-header">
                     <span class="wac-step-number">${stepNumber}</span>
@@ -947,7 +985,7 @@ class WAC_Chat_Funnels {
                             <option value="end">Finalizar</option>
                         </select>
                         
-                        <div class="wac-step-options" id="${stepId}_options" style="display:none;">
+                        <div class="wac-step-options" id="${stepId}_options" style="display:${optionsDisplay};">
                             <label>Opciones (para preguntas):</label>
                             <div class="wac-options">
                                 <div class="wac-option">
@@ -963,7 +1001,7 @@ class WAC_Chat_Funnels {
                             <button type="button" class="button button-small" onclick="addOptionToStep('${stepId}')">+ Agregar Opción</button>
                         </div>
                         
-                        <div class="wac-step-form" id="${stepId}_form" style="display:none;">
+                        <div class="wac-step-form" id="${stepId}_form" style="display:${formDisplay};">
                             <label>Campos del formulario:</label>
                             <div class="wac-form-fields">
                                 <div class="wac-field">
@@ -1105,6 +1143,14 @@ ${analyzeSteps()}`;
         
         // Manejar cambios en selects de acción
         document.addEventListener('change', function(e) {
+            // Manejar cambios en tipo de paso
+            if (e.target.name && e.target.name.includes('_type')) {
+                const stepId = e.target.name.replace('_type', '');
+                console.log('Cambio detectado en tipo de paso:', stepId, '->', e.target.value);
+                updateStepType(stepId, e.target.value);
+            }
+            
+            // Manejar cambios en selects de acción
             if (e.target.name && e.target.name.includes('_action')) {
                 const urlInput = e.target.parentElement.querySelector('input[type="text"]');
                 if (urlInput) {
