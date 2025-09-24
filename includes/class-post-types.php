@@ -100,6 +100,7 @@ class WAC_Chat_Post_Types {
                     <button type="button" id="install-composer-btn" class="button" style="background: #00a32a; color: white;">📦 Install Composer</button>
                     <button type="button" id="debug-save-btn" class="button" style="background: #d63638; color: white;">💾 Debug Save</button>
                     <button type="button" id="verify-saved-btn" class="button" style="background: #d63638; color: white;">🔍 Verify Saved</button>
+                    <button type="button" id="test-save-process-btn" class="button" style="background: #8b5cf6; color: white;">🧪 Test Save Process</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
@@ -582,6 +583,151 @@ composer install --no-dev --optimize-autoloader</pre>
                         console.log('Funnel position:', yaml.indexOf('funnel:'));
                         console.log('First 5 lines:', yaml.split('\n').slice(0, 5));
                         console.groupEnd();
+                    });
+                }
+            
+                // Test Save Process button
+                const testSaveProcessBtn = document.getElementById('test-save-process-btn');
+                if (testSaveProcessBtn) {
+                    testSaveProcessBtn.addEventListener('click', function() {
+                        console.log('🧪 Test Save Process Button Clicked');
+                        
+                        // Get current post ID
+                        const postId = document.getElementById('post_ID') ? document.getElementById('post_ID').value : 'unknown';
+                        
+                        // Get current YAML
+                        const yamlEditor = document.getElementById('yaml-content');
+                        const divEditor = document.getElementById('wac-yaml-editor');
+                        const hiddenField = document.getElementById('wac-funnel-config');
+                        
+                        let yaml = '';
+                        if (yamlEditor && yamlEditor.value) {
+                            yaml = yamlEditor.value;
+                        } else if (divEditor && divEditor.textContent) {
+                            yaml = divEditor.textContent;
+                        } else if (hiddenField && hiddenField.value) {
+                            yaml = hiddenField.value;
+                        }
+                        
+                        // Step 1: Test YAML validation
+                        const previewContainer = document.getElementById('wac-chat-preview');
+                        if (previewContainer) {
+                            previewContainer.innerHTML = `
+                                <div style="padding:16px;background:#e7f3ff;border:1px solid #b3d9ff;border-radius:6px;">
+                                    <h3 style="margin: 0 0 15px 0; color: #0066cc;">🧪 Test Save Process</h3>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <strong>Step 1: Validating YAML...</strong>
+                                        <div id="validation-result" style="margin-top: 10px;"></div>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <strong>Step 2: Testing Save...</strong>
+                                        <div id="save-result" style="margin-top: 10px;"></div>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 15px;">
+                                        <strong>Step 3: Verifying Save...</strong>
+                                        <div id="verify-result" style="margin-top: 10px;"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        // Step 1: Validate YAML
+                        fetch('/wp-json/wac-chat/v1/validate-yaml', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-WP-Nonce': window.wacChatAdmin ? window.wacChatAdmin.apiNonce : ''
+                            },
+                            body: JSON.stringify({ yaml: yaml })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('🧪 Validation Result:', data);
+                            
+                            const validationResult = document.getElementById('validation-result');
+                            if (validationResult) {
+                                if (data.valid) {
+                                    validationResult.innerHTML = '<span style="color: green;">✅ YAML is valid</span>';
+                                } else {
+                                    validationResult.innerHTML = `<span style="color: red;">❌ YAML has errors: ${JSON.stringify(data.errors)}</span>`;
+                                }
+                            }
+                            
+                            // Step 2: Test Save via API
+                            return fetch('/wp-json/wac-chat/v1/funnels/' + postId, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-WP-Nonce': window.wacChatAdmin ? window.wacChatAdmin.apiNonce : ''
+                                },
+                                body: JSON.stringify({ 
+                                    config: yaml,
+                                    rules: [],
+                                    active: true
+                                })
+                            });
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('🧪 Save Result:', data);
+                            
+                            const saveResult = document.getElementById('save-result');
+                            if (saveResult) {
+                                if (data.success !== false) {
+                                    saveResult.innerHTML = '<span style="color: green;">✅ Save successful</span>';
+                                } else {
+                                    saveResult.innerHTML = `<span style="color: red;">❌ Save failed: ${JSON.stringify(data)}</span>`;
+                                }
+                            }
+                            
+                            // Step 3: Verify Save
+                            return fetch('/wp-json/wac-chat/v1/funnels/' + postId, {
+                                method: 'GET',
+                                headers: {
+                                    'X-WP-Nonce': window.wacChatAdmin ? window.wacChatAdmin.apiNonce : ''
+                                }
+                            });
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('🧪 Verify Result:', data);
+                            
+                            const verifyResult = document.getElementById('verify-result');
+                            if (verifyResult) {
+                                const savedConfig = data.config || '';
+                                const originalConfig = yaml.replace(/\r\n/g, '\n').trim();
+                                const savedConfigNormalized = savedConfig.replace(/\r\n/g, '\n').trim();
+                                
+                                if (savedConfigNormalized === originalConfig) {
+                                    verifyResult.innerHTML = '<span style="color: green;">✅ Save verified - YAML matches</span>';
+                                } else {
+                                    verifyResult.innerHTML = `
+                                        <span style="color: orange;">⚠️ Save mismatch</span><br>
+                                        <details style="margin-top: 10px;">
+                                            <summary>Show differences</summary>
+                                            <div style="margin-top: 10px;">
+                                                <strong>Original (${originalConfig.length} chars):</strong><br>
+                                                <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto;">${originalConfig}</pre>
+                                                <br>
+                                                <strong>Saved (${savedConfigNormalized.length} chars):</strong><br>
+                                                <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 11px; max-height: 200px; overflow-y: auto;">${savedConfigNormalized}</pre>
+                                            </div>
+                                        </details>
+                                    `;
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('🧪 Test Save Process Error:', error);
+                            
+                            const validationResult = document.getElementById('validation-result');
+                            if (validationResult && !validationResult.innerHTML) {
+                                validationResult.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+                            }
+                        });
                     });
                 }
                 
