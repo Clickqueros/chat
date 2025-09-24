@@ -99,6 +99,7 @@ class WAC_Chat_Post_Types {
                     <button type="button" id="test-parser-btn" class="button" style="background: #d63638; color: white;">🧪 Test Parser</button>
                     <button type="button" id="install-composer-btn" class="button" style="background: #00a32a; color: white;">📦 Install Composer</button>
                     <button type="button" id="debug-save-btn" class="button" style="background: #d63638; color: white;">💾 Debug Save</button>
+                    <button type="button" id="verify-saved-btn" class="button" style="background: #d63638; color: white;">🔍 Verify Saved</button>
                     <span id="debug-status" style="margin-left: 10px; color: #666;"></span>
                 </div>
                 <div id="wac-yaml-editor" style="height: 400px; border: 1px solid #ddd;"></div>
@@ -429,6 +430,76 @@ composer install --no-dev --optimize-autoloader</pre>
                     });
                 }
             
+                // Verify Saved button
+                const verifySavedBtn = document.getElementById('verify-saved-btn');
+                if (verifySavedBtn) {
+                    verifySavedBtn.addEventListener('click', function() {
+                        console.log('🔍 Verify Saved Button Clicked');
+                        
+                        // Get current post ID
+                        const postId = document.getElementById('post_ID') ? document.getElementById('post_ID').value : 'unknown';
+                        
+                        // Make API call to check what's actually saved
+                        fetch('/wp-json/wac-chat/v1/funnels/' + postId, {
+                            method: 'GET',
+                            headers: {
+                                'X-WP-Nonce': window.wacChatAdmin ? window.wacChatAdmin.apiNonce : ''
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log('🔍 Saved data response:', data);
+                            
+                            const previewContainer = document.getElementById('wac-chat-preview');
+                            if (previewContainer) {
+                                previewContainer.innerHTML = `
+                                    <div style="padding:16px;background:#fff3cd;border:1px solid #ffeaa7;border-radius:6px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #856404;">🔍 Verify Saved Data</h3>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>Post ID:</strong> ${postId}
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>API Response:</strong><br>
+                                            <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0; max-height: 300px; overflow-y: auto;">${JSON.stringify(data, null, 2)}</pre>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>Saved YAML:</strong><br>
+                                            <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0; max-height: 300px; overflow-y: auto;">${data.config || 'No config found'}</pre>
+                                        </div>
+                                        
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>Saved Rules:</strong><br>
+                                            <pre style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0; max-height: 200px; overflow-y: auto;">${JSON.stringify(data.rules || {}, null, 2)}</pre>
+                                        </div>
+                                        
+                                        <div style="margin-top: 15px;">
+                                            <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        })
+                        .catch(error => {
+                            console.error('🔍 Verify Saved Error:', error);
+                            
+                            const previewContainer = document.getElementById('wac-chat-preview');
+                            if (previewContainer) {
+                                previewContainer.innerHTML = `
+                                    <div style="padding:16px;background:#f8d7da;border:1px solid #f5c6cb;border-radius:6px;">
+                                        <h3 style="margin: 0 0 15px 0; color: #721c24;">🔍 Verify Saved Error</h3>
+                                        <p><strong>Error:</strong> ${error.message}</p>
+                                        <p><strong>Post ID:</strong> ${postId}</p>
+                                        <button onclick="document.getElementById('wac-chat-preview').innerHTML='';" class="button">Cerrar</button>
+                                    </div>
+                                `;
+                            }
+                        });
+                    });
+                }
+            
                 // Force Debug button
                 const forceDebugBtn = document.getElementById('force-debug-btn');
                 if (forceDebugBtn) {
@@ -742,16 +813,31 @@ composer install --no-dev --optimize-autoloader</pre>
     public static function save_metaboxes($post_id) {
         // Verificar nonces y permisos
         if (!current_user_can('manage_chat_funnels')) {
+            error_log('WAC Chat Funnels - Save denied: insufficient permissions');
             return;
         }
+        
+        error_log('WAC Chat Funnels - Saving metaboxes for post ID: ' . $post_id);
         
         // Guardar configuración del funnel
         if (isset($_POST['wac_funnel_config_nonce']) && wp_verify_nonce($_POST['wac_funnel_config_nonce'], 'wac_funnel_config')) {
             if (isset($_POST['wac_funnel_config'])) {
                 $raw = wp_unslash($_POST['wac_funnel_config']);          // respeta saltos de línea
-                // NO uses sanitize_textarea_field: rompe la indentación del YAML
-                update_post_meta($post_id, '_wac_funnel_config', $raw);
+                error_log('WAC Chat Funnels - YAML config to save: ' . substr($raw, 0, 200) . '...');
+                error_log('WAC Chat Funnels - YAML config length: ' . strlen($raw));
+                
+                $result = update_post_meta($post_id, '_wac_funnel_config', $raw);
+                error_log('WAC Chat Funnels - YAML config save result: ' . ($result ? 'SUCCESS' : 'FAILED'));
+                
+                // Verificar que se guardó correctamente
+                $saved = get_post_meta($post_id, '_wac_funnel_config', true);
+                error_log('WAC Chat Funnels - YAML config verification: ' . substr($saved, 0, 200) . '...');
+            } else {
+                error_log('WAC Chat Funnels - No wac_funnel_config in POST data');
             }
+        } else {
+            error_log('WAC Chat Funnels - Nonce verification failed for wac_funnel_config');
+            error_log('WAC Chat Funnels - POST data keys: ' . implode(', ', array_keys($_POST)));
         }
         
         // Guardar reglas
