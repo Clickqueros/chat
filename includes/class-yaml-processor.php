@@ -69,8 +69,8 @@ class WAC_Chat_YAML_Processor {
             }
         }
         
-        // Fallback: usar parser simple si Symfony no está disponible
-        return WAC_Chat_Simple_YAML_Parser::parse($yaml_content);
+        // Fallback: usar parser mejorado si Symfony no está disponible
+        return WAC_Chat_Improved_YAML_Parser::parse($yaml_content);
     }
     
     /**
