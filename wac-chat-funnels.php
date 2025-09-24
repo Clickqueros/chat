@@ -268,7 +268,6 @@ class WAC_Chat_Funnels {
             <div class="wac-builder-actions">
                 <button type="button" class="button button-primary" onclick="addNewStep()">+ Agregar Paso</button>
                 <button type="button" class="button" onclick="previewFunnel()">👁️ Vista Previa</button>
-                <button type="button" class="button button-secondary" onclick="saveFunnelConfig()">💾 Guardar Funnel</button>
                 <button type="button" class="button" onclick="loadFunnelConfig()">🔄 Cargar Config</button>
                 <button type="button" class="button" onclick="resetToDefault()">🔄 Restaurar Por Defecto</button>
             </div>
@@ -277,10 +276,29 @@ class WAC_Chat_Funnels {
                 <strong>Debug Info:</strong>
                 <button type="button" class="button button-small" onclick="debugFunnelData()" style="margin-left: 10px;">🔍 Ver Datos</button>
                 <button type="button" class="button button-small" onclick="clearFunnelData()" style="margin-left: 5px;">🗑️ Limpiar</button>
+                <button type="button" class="button button-small" onclick="showDebugArea()" style="margin-left: 5px;">📋 Mostrar Debug</button>
+            </div>
+            
+            <!-- Área de Debug Visible -->
+            <div id="wac-debug-area" style="display:none; margin-top: 15px; padding: 15px; background: #f8f9fa; border: 2px solid #007cba; border-radius: 5px;">
+                <h4 style="margin-top: 0; color: #007cba;">🔍 Área de Debug</h4>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button type="button" class="button button-small" onclick="refreshDebugData()">🔄 Actualizar</button>
+                    <button type="button" class="button button-small" onclick="copyDebugData()">📋 Copiar</button>
+                    <button type="button" class="button button-small" onclick="hideDebugArea()">❌ Cerrar</button>
+                </div>
+                <div id="wac-debug-content" style="background: white; padding: 10px; border: 1px solid #ddd; border-radius: 3px; font-family: monospace; font-size: 11px; max-height: 300px; overflow-y: auto; white-space: pre-wrap;"></div>
             </div>
             
             <div class="wac-save-notice" id="wac-save-notice" style="display:none;">
-                <p>✅ <strong>Funnel guardado!</strong> Los cambios se aplicarán cuando actualices el post.</p>
+                <p>✅ <strong>Configuración cargada!</strong> Se han restaurado tus cambios guardados.</p>
+            </div>
+            
+            <div class="wac-help-notice" style="margin-top: 15px; padding: 10px; background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; font-size: 13px;">
+                <strong>💡 Cómo funciona:</strong><br>
+                • Los cambios se guardan automáticamente mientras escribes<br>
+                • Haz clic en <strong>"Actualizar"</strong> (botón azul arriba) para guardar permanentemente<br>
+                • Solo necesitas un botón de guardado: el de WordPress
             </div>
         </div>
         
@@ -682,13 +700,16 @@ class WAC_Chat_Funnels {
         function saveFunnelConfig() {
             // Recopilar todos los datos del editor
             const funnelData = collectFunnelData();
+            const stepsCount = Object.keys(funnelData).length;
             
             // Guardar en campo oculto
-            document.getElementById('wac-funnel-steps-hidden').value = JSON.stringify(funnelData);
+            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
+            hiddenField.value = JSON.stringify(funnelData);
             
-            // Mostrar notificación visual
+            // Mostrar notificación visual con más detalles
             const notice = document.getElementById('wac-save-notice');
             if (notice) {
+                notice.innerHTML = `<p>✅ <strong>Funnel guardado!</strong> ${stepsCount} pasos guardados. Los cambios se aplicarán cuando actualices el post.</p>`;
                 notice.style.display = 'block';
                 notice.style.background = '#d4edda';
                 notice.style.color = '#155724';
@@ -697,13 +718,22 @@ class WAC_Chat_Funnels {
                 notice.style.borderRadius = '4px';
                 notice.style.margin = '10px 0';
                 
-                // Ocultar después de 3 segundos
+                // Ocultar después de 4 segundos
                 setTimeout(() => {
                     notice.style.display = 'none';
-                }, 3000);
+                }, 4000);
             }
             
-            console.log('Funnel data saved:', funnelData);
+            console.log('=== SAVE FUNNEL CONFIG ===');
+            console.log('Steps saved:', stepsCount);
+            console.log('Data saved:', funnelData);
+            console.log('Hidden field length:', hiddenField.value.length);
+            console.log('Hidden field value:', hiddenField.value);
+            
+            // Actualizar área de debug si está visible
+            if (document.getElementById('wac-debug-area').style.display === 'block') {
+                refreshDebugData();
+            }
         }
         
         function collectFunnelData() {
@@ -764,12 +794,21 @@ class WAC_Chat_Funnels {
                 loadSavedConfiguration();
                 
                 editorContainer.addEventListener('input', function() {
-                    // Auto-guardar cada 2 segundos después del último cambio
+                    // Auto-guardar silenciosamente cada 1 segundo después del último cambio
                     clearTimeout(window.autoSaveTimeout);
-                    window.autoSaveTimeout = setTimeout(saveFunnelConfig, 2000);
+                    window.autoSaveTimeout = setTimeout(autoSaveSilent, 1000);
                 });
             }
         });
+        
+        function autoSaveSilent() {
+            // Guardar silenciosamente sin notificaciones
+            const funnelData = collectFunnelData();
+            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
+            hiddenField.value = JSON.stringify(funnelData);
+            
+            console.log('Auto-saved silently:', Object.keys(funnelData).length, 'steps');
+        }
         
         function loadSavedConfiguration() {
             // Verificar si hay datos guardados
@@ -838,6 +877,80 @@ Ver consola para más detalles.`);
             console.log('Current editor data:', currentData);
             console.log('Saved data from DB:', savedData);
             console.log('Hidden field value:', document.getElementById('wac-funnel-steps-hidden').value);
+        }
+        
+        function showDebugArea() {
+            document.getElementById('wac-debug-area').style.display = 'block';
+            refreshDebugData();
+        }
+        
+        function hideDebugArea() {
+            document.getElementById('wac-debug-area').style.display = 'none';
+        }
+        
+        function refreshDebugData() {
+            const currentData = collectFunnelData();
+            const savedData = typeof wacSavedSteps !== 'undefined' ? wacSavedSteps : 'No hay datos guardados';
+            const hiddenFieldValue = document.getElementById('wac-funnel-steps-hidden').value;
+            const stepsCount = document.querySelectorAll('.wac-step').length;
+            
+            const debugInfo = `=== DEBUG INFO - ${new Date().toLocaleTimeString()} ===
+
+📊 PASOS ENCONTRADOS: ${stepsCount}
+💾 CAMPOS OCULTOS GUARDADOS: ${hiddenFieldValue.length} caracteres
+
+📋 DATOS ACTUALES DEL EDITOR:
+${JSON.stringify(currentData, null, 2)}
+
+💾 DATOS GUARDADOS EN BD:
+${JSON.stringify(savedData, null, 2)}
+
+🔍 CAMPO OCULTO COMPLETO:
+${hiddenFieldValue}
+
+📝 ANÁLISIS DE PASOS:
+${analyzeSteps()}`;
+
+            document.getElementById('wac-debug-content').textContent = debugInfo;
+        }
+        
+        function analyzeSteps() {
+            const steps = document.querySelectorAll('.wac-step');
+            let analysis = '';
+            
+            steps.forEach((step, index) => {
+                const stepNumber = index + 1;
+                const stepId = step.getAttribute('data-step-id') || `step_${stepNumber}`;
+                const fields = step.querySelectorAll('input, select, textarea');
+                
+                analysis += `\nPaso ${stepNumber} (${stepId}):\n`;
+                analysis += `  - Campos encontrados: ${fields.length}\n`;
+                
+                fields.forEach(field => {
+                    if (field.name) {
+                        const value = field.type === 'checkbox' ? field.checked : field.value;
+                        analysis += `  - ${field.name}: "${value}"\n`;
+                    }
+                });
+            });
+            
+            return analysis;
+        }
+        
+        function copyDebugData() {
+            const debugContent = document.getElementById('wac-debug-content').textContent;
+            navigator.clipboard.writeText(debugContent).then(() => {
+                alert('✅ Debug data copiado al portapapeles!');
+            }).catch(() => {
+                // Fallback para navegadores que no soportan clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = debugContent;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ Debug data copiado al portapapeles!');
+            });
         }
         
         function clearFunnelData() {
