@@ -158,16 +158,383 @@ class WAC_Chat_Funnels {
             </tr>
         </table>
         
-        <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-radius: 5px;">
-            <h4>🎯 Vista Previa</h4>
-            <p>Guarda el funnel y ve a tu sitio web para ver el chat en acción.</p>
-            <p><strong>Mensajes por defecto:</strong></p>
-            <ul>
-                <li>📝 Bienvenida: "¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte?"</li>
-                <li>🔘 Opciones: Cotización | WhatsApp | Ver portafolio</li>
-                <li>📋 Formulario: Nombre, Email, Teléfono</li>
-            </ul>
+        <h3><?php _e('Editor de Funnel', 'wac-chat-funnels'); ?></h3>
+        <div id="wac-funnel-builder">
+            <div id="wac-steps-container">
+                <div class="wac-step" data-step="1">
+                    <div class="wac-step-header">
+                        <span class="wac-step-number">1</span>
+                        <span class="wac-step-title">Mensaje de Bienvenida</span>
+                        <button class="wac-step-delete" onclick="deleteStep(1)">×</button>
+                    </div>
+                    <div class="wac-step-content">
+                        <label>Mensaje:</label>
+                        <textarea name="step_1_message" placeholder="Escribe el mensaje de bienvenida...">¡Hola! Soy tu asistente virtual. ¿En qué puedo ayudarte?</textarea>
+                        <label>Siguiente paso:</label>
+                        <select name="step_1_next">
+                            <option value="2">Paso 2 - Opciones</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="wac-step" data-step="2">
+                    <div class="wac-step-header">
+                        <span class="wac-step-number">2</span>
+                        <span class="wac-step-title">Pregunta con Opciones</span>
+                        <button class="wac-step-delete" onclick="deleteStep(2)">×</button>
+                    </div>
+                    <div class="wac-step-content">
+                        <label>Pregunta:</label>
+                        <textarea name="step_2_message" placeholder="Escribe tu pregunta...">Elige una opción:</textarea>
+                        
+                        <div class="wac-options">
+                            <div class="wac-option">
+                                <input type="text" name="step_2_option_1_text" placeholder="Texto del botón" value="Cotización">
+                                <select name="step_2_option_1_action">
+                                    <option value="3">Paso 3 - Formulario</option>
+                                    <option value="whatsapp">WhatsApp directo</option>
+                                    <option value="redirect">Redirigir a URL</option>
+                                </select>
+                                <input type="text" name="step_2_option_1_url" placeholder="URL (si es redirección)" style="display:none;">
+                            </div>
+                            
+                            <div class="wac-option">
+                                <input type="text" name="step_2_option_2_text" placeholder="Texto del botón" value="WhatsApp">
+                                <select name="step_2_option_2_action">
+                                    <option value="whatsapp">WhatsApp directo</option>
+                                    <option value="3">Paso 3 - Formulario</option>
+                                    <option value="redirect">Redirigir a URL</option>
+                                </select>
+                                <input type="text" name="step_2_option_2_url" placeholder="URL (si es redirección)" style="display:none;">
+                            </div>
+                            
+                            <div class="wac-option">
+                                <input type="text" name="step_2_option_3_text" placeholder="Texto del botón" value="Ver portafolio">
+                                <select name="step_2_option_3_action">
+                                    <option value="redirect">Redirigir a URL</option>
+                                    <option value="3">Paso 3 - Formulario</option>
+                                    <option value="whatsapp">WhatsApp directo</option>
+                                </select>
+                                <input type="text" name="step_2_option_3_url" placeholder="URL (si es redirección)" value="/portafolio">
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="button" onclick="addOption(2)">+ Agregar Opción</button>
+                    </div>
+                </div>
+                
+                <div class="wac-step" data-step="3">
+                    <div class="wac-step-header">
+                        <span class="wac-step-number">3</span>
+                        <span class="wac-step-title">Formulario de Captura</span>
+                        <button class="wac-step-delete" onclick="deleteStep(3)">×</button>
+                    </div>
+                    <div class="wac-step-content">
+                        <label>Mensaje del formulario:</label>
+                        <textarea name="step_3_message" placeholder="Escribe el mensaje...">Déjame tus datos:</textarea>
+                        
+                        <div class="wac-form-fields">
+                            <div class="wac-field">
+                                <label>
+                                    <input type="checkbox" name="step_3_field_nombre" checked> Nombre (requerido)
+                                </label>
+                            </div>
+                            <div class="wac-field">
+                                <label>
+                                    <input type="checkbox" name="step_3_field_email" checked> Email (requerido)
+                                </label>
+                            </div>
+                            <div class="wac-field">
+                                <label>
+                                    <input type="checkbox" name="step_3_field_telefono"> Teléfono (opcional)
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <label>Después del formulario:</label>
+                        <select name="step_3_next">
+                            <option value="whatsapp">Enviar a WhatsApp</option>
+                            <option value="message">Mostrar mensaje de agradecimiento</option>
+                        </select>
+                        
+                        <textarea name="step_3_thanks" placeholder="Mensaje de agradecimiento (opcional)" style="display:none;">¡Gracias por tus datos! Te contactaré pronto.</textarea>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="wac-builder-actions">
+                <button type="button" class="button button-primary" onclick="addNewStep()">+ Agregar Paso</button>
+                <button type="button" class="button" onclick="previewFunnel()">👁️ Vista Previa</button>
+                <button type="button" class="button" onclick="resetToDefault()">🔄 Restaurar Por Defecto</button>
+            </div>
         </div>
+        
+        <div id="wac-preview-modal" style="display:none;">
+            <div class="wac-modal-content">
+                <div class="wac-modal-header">
+                    <h3>Vista Previa del Funnel</h3>
+                    <button onclick="closePreview()">×</button>
+                </div>
+                <div class="wac-modal-body">
+                    <div id="wac-preview-chat"></div>
+                </div>
+            </div>
+        </div>
+        
+        <style>
+        #wac-funnel-builder {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        
+        .wac-step {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            padding: 15px;
+        }
+        
+        .wac-step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .wac-step-number {
+            background: #25D366;
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        .wac-step-title {
+            flex: 1;
+            font-weight: bold;
+        }
+        
+        .wac-step-delete {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+        }
+        
+        .wac-step-content label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        
+        .wac-step-content textarea,
+        .wac-step-content select,
+        .wac-step-content input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .wac-option {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .wac-option input[type="text"] {
+            flex: 1;
+        }
+        
+        .wac-option select {
+            flex: 1;
+        }
+        
+        .wac-builder-actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .wac-builder-actions button {
+            margin-right: 10px;
+        }
+        
+        #wac-preview-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+        }
+        
+        .wac-modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+        }
+        
+        .wac-modal-header {
+            background: #25D366;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .wac-modal-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        
+        .wac-modal-body {
+            padding: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        #wac-preview-chat {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            background: #f9f9f9;
+            min-height: 300px;
+        }
+        </style>
+        
+        <script>
+        function addNewStep() {
+            const container = document.getElementById('wac-steps-container');
+            const stepCount = container.children.length + 1;
+            
+            const newStep = document.createElement('div');
+            newStep.className = 'wac-step';
+            newStep.setAttribute('data-step', stepCount);
+            newStep.innerHTML = `
+                <div class="wac-step-header">
+                    <span class="wac-step-number">${stepCount}</span>
+                    <span class="wac-step-title">Nuevo Paso</span>
+                    <button class="wac-step-delete" onclick="deleteStep(${stepCount})">×</button>
+                </div>
+                <div class="wac-step-content">
+                    <label>Tipo de paso:</label>
+                    <select name="step_${stepCount}_type" onchange="updateStepType(${stepCount}, this.value)">
+                        <option value="message">Mensaje</option>
+                        <option value="question">Pregunta con opciones</option>
+                        <option value="form">Formulario</option>
+                        <option value="redirect">Redirección</option>
+                    </select>
+                    
+                    <div id="step_${stepCount}_content">
+                        <label>Mensaje:</label>
+                        <textarea name="step_${stepCount}_message" placeholder="Escribe tu mensaje..."></textarea>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(newStep);
+        }
+        
+        function deleteStep(stepNumber) {
+            if (confirm('¿Estás seguro de eliminar este paso?')) {
+                const step = document.querySelector(`[data-step="${stepNumber}"]`);
+                if (step) {
+                    step.remove();
+                }
+            }
+        }
+        
+        function addOption(stepNumber) {
+            const optionsContainer = document.querySelector(`[data-step="${stepNumber}"] .wac-options`);
+            const optionCount = optionsContainer.children.length + 1;
+            
+            const newOption = document.createElement('div');
+            newOption.className = 'wac-option';
+            newOption.innerHTML = `
+                <input type="text" name="step_${stepNumber}_option_${optionCount}_text" placeholder="Texto del botón">
+                <select name="step_${stepNumber}_option_${optionCount}_action">
+                    <option value="whatsapp">WhatsApp directo</option>
+                    <option value="redirect">Redirigir a URL</option>
+                    <option value="next">Siguiente paso</option>
+                </select>
+                <input type="text" name="step_${stepNumber}_option_${optionCount}_url" placeholder="URL (si es redirección)" style="display:none;">
+                <button type="button" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            optionsContainer.appendChild(newOption);
+        }
+        
+        function updateStepType(stepNumber, type) {
+            const contentDiv = document.getElementById(`step_${stepNumber}_content`);
+            // Aquí agregarías la lógica para cambiar el contenido según el tipo
+            console.log(`Cambiar paso ${stepNumber} a tipo ${type}`);
+        }
+        
+        function previewFunnel() {
+            document.getElementById('wac-preview-modal').style.display = 'block';
+            
+            // Aquí agregarías la lógica para mostrar la vista previa
+            document.getElementById('wac-preview-chat').innerHTML = `
+                <div style="text-align: center; color: #666; margin-top: 100px;">
+                    <h4>Vista Previa del Funnel</h4>
+                    <p>Aquí se mostraría cómo se ve el chat</p>
+                    <p><em>Funcionalidad en desarrollo...</em></p>
+                </div>
+            `;
+        }
+        
+        function closePreview() {
+            document.getElementById('wac-preview-modal').style.display = 'none';
+        }
+        
+        function resetToDefault() {
+            if (confirm('¿Estás seguro de restaurar la configuración por defecto?')) {
+                location.reload();
+            }
+        }
+        
+        // Manejar cambios en selects de acción
+        document.addEventListener('change', function(e) {
+            if (e.target.name && e.target.name.includes('_action')) {
+                const urlInput = e.target.parentElement.querySelector('input[type="text"]');
+                if (urlInput) {
+                    if (e.target.value === 'redirect') {
+                        urlInput.style.display = 'block';
+                    } else {
+                        urlInput.style.display = 'none';
+                    }
+                }
+            }
+        });
+        </script>
         <?php
     }
     
