@@ -221,8 +221,22 @@
       if (!this.previewContainer) return;
       this.previewContainer.innerHTML = `
         <div style="padding:16px;color:#d63638;background:#fcf0f1;border:1px solid #f5c2c7;border-radius:6px;">
-          <strong>Error en YAML:</strong><br>${errorHTML}
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <strong>Error en YAML:</strong>
+            <button id="debug-error-btn" type="button" class="button button-small" style="margin-left: 10px;">
+              🔍 Debug Error
+            </button>
+          </div>
+          <div>${errorHTML}</div>
         </div>`;
+      
+      // Agregar listener al botón de debug de error
+      const debugErrorBtn = document.getElementById('debug-error-btn');
+      if (debugErrorBtn) {
+        debugErrorBtn.addEventListener('click', () => {
+          this.debugYAMLError(result);
+        });
+      }
     }
 
     renderSuccess(result) {
@@ -332,6 +346,94 @@
       console.log('🐛 WAC Chat Funnels Debug Info:', debugInfo);
       
       alert(basicInfo + '\n\nFull details logged to console (F12).');
+    }
+
+    debugYAMLError(errorResult) {
+      const yaml = this.yamlEditor ? this.yamlEditor.value : '';
+      
+      // Información detallada del error
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        yamlLength: yaml.length,
+        yamlFirstChars: yaml.substring(0, 100),
+        yamlLastChars: yaml.substring(Math.max(0, yaml.length - 100)),
+        errorResult: errorResult,
+        hasFunnelKey: yaml.includes('funnel:'),
+        funnelKeyPosition: yaml.indexOf('funnel:'),
+        lines: yaml.split('\n').length,
+        firstLine: yaml.split('\n')[0],
+        secondLine: yaml.split('\n')[1],
+        thirdLine: yaml.split('\n')[2]
+      };
+
+      // Mostrar información en el preview
+      if (this.previewContainer) {
+        this.previewContainer.innerHTML = `
+          <div style="padding:16px;background:#f0f8ff;border:1px solid #b3d9ff;border-radius:6px;">
+            <h3 style="margin: 0 0 15px 0; color: #0066cc;">🔍 Debug YAML Error</h3>
+            
+            <div style="margin-bottom: 10px;">
+              <strong>YAML Info:</strong><br>
+              • Longitud: ${debugInfo.yamlLength} caracteres<br>
+              • Líneas: ${debugInfo.lines}<br>
+              • ¿Contiene 'funnel:'? ${debugInfo.hasFunnelKey ? '✅ Sí' : '❌ No'}<br>
+              ${debugInfo.funnelKeyPosition >= 0 ? `• Posición de 'funnel:': ${debugInfo.funnelKeyPosition}` : ''}
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <strong>Primeras líneas:</strong><br>
+              <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
+1: ${escapeHTML(debugInfo.firstLine)}
+2: ${escapeHTML(debugInfo.secondLine)}
+3: ${escapeHTML(debugInfo.thirdLine)}
+              </pre>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <strong>Error Details:</strong><br>
+              <pre style="background: #f5f5f5; padding: 8px; border-radius: 4px; font-size: 12px; margin: 5px 0;">
+${escapeHTML(JSON.stringify(errorResult, null, 2))}
+              </pre>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <strong>YAML Completo:</strong><br>
+              <textarea readonly style="width: 100%; height: 200px; font-family: monospace; font-size: 12px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">${escapeHTML(yaml)}</textarea>
+            </div>
+
+            <div style="margin-top: 15px;">
+              <button id="close-debug-btn" type="button" class="button">Cerrar Debug</button>
+              <button id="copy-yaml-btn" type="button" class="button">Copiar YAML</button>
+            </div>
+          </div>
+        `;
+
+        // Agregar listeners a los botones
+        const closeBtn = document.getElementById('close-debug-btn');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            this.updatePreview();
+          });
+        }
+
+        const copyBtn = document.getElementById('copy-yaml-btn');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(yaml).then(() => {
+              alert('YAML copiado al portapapeles');
+            }).catch(() => {
+              alert('Error al copiar. Revisa la consola para el YAML completo.');
+            });
+          });
+        }
+      }
+
+      // Log completo en consola
+      console.group('🔍 WAC Chat Funnels - YAML Error Debug');
+      console.log('YAML Content:', yaml);
+      console.log('Error Result:', errorResult);
+      console.log('Debug Info:', debugInfo);
+      console.groupEnd();
     }
   }
 
