@@ -70,7 +70,7 @@ class WAC_Chat_YAML_Processor {
         }
         
         // Fallback: usar parser simple si Symfony no está disponible
-        return self::fallback_yaml_parse($yaml_content);
+        return WAC_Chat_Simple_YAML_Parser::parse($yaml_content);
     }
     
     /**
@@ -309,16 +309,17 @@ class WAC_Chat_YAML_Processor {
      * @return array|null Array parseado o null si falla
      */
     private static function fallback_yaml_parse($yaml_string) {
-        error_log('WAC Chat Funnels - Using fallback YAML parser');
+        error_log('WAC Chat Funnels - Using simple YAML parser');
         error_log('WAC Chat Funnels - YAML length: ' . strlen($yaml_string));
         
-        // Implementación básica del parser simple que ya teníamos
+        // Parser YAML simple y robusto para funnels
         $lines = explode("\n", $yaml_string);
         $result = array();
         $current_path = array();
-        $current_node = '';
         $in_multiline_text = false;
         $multiline_content = '';
+        $multiline_path = array();
+        $multiline_indent = 0;
         
         foreach ($lines as $line_num => $line) {
             $original_line = $line;
