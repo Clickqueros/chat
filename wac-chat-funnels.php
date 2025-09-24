@@ -815,27 +815,24 @@ class WAC_Chat_Funnels {
             if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
                 console.log('Cargando configuración guardada:', wacSavedSteps);
                 
-                // Primero aplicar datos a los pasos existentes
+                // Primero aplicar datos a los pasos existentes (pasos 1, 2, 3)
                 Object.keys(wacSavedSteps).forEach(fieldName => {
                     const field = document.querySelector(`[name="${fieldName}"]`);
                     if (field) {
                         if (field.type === 'checkbox') {
-                            field.checked = wacSavedSteps[fieldName];
+                            field.checked = wacSavedSteps[fieldName] === 'on' || wacSavedSteps[fieldName] === true;
                         } else {
                             field.value = wacSavedSteps[fieldName];
                         }
                     }
                 });
                 
-                // Si hay pasos dinámicos guardados, recrearlos
-                const stepsData = Object.values(wacSavedSteps).filter(data => 
-                    typeof data === 'object' && data.stepId && data.stepId.includes('step_') && data.stepId.includes('_')
-                );
+                // Buscar pasos dinámicos guardados (pasos 4+)
+                const dynamicSteps = findDynamicSteps(wacSavedSteps);
                 
-                if (stepsData.length > 0) {
-                    console.log('Recreando pasos dinámicos:', stepsData);
-                    // Por ahora solo mostramos un mensaje, la recreación completa requiere más lógica
-                    console.log('Pasos dinámicos detectados - funcionalidad en desarrollo');
+                if (dynamicSteps.length > 0) {
+                    console.log('Recreando pasos dinámicos:', dynamicSteps);
+                    recreateDynamicSteps(dynamicSteps);
                 }
                 
                 // Mostrar notificación de carga
@@ -854,6 +851,141 @@ class WAC_Chat_Funnels {
             } else {
                 console.log('No hay configuración guardada, usando valores por defecto');
             }
+        }
+        
+        function findDynamicSteps(savedData) {
+            const dynamicSteps = [];
+            const stepIds = new Set();
+            
+            // Buscar todos los campos que pertenecen a pasos dinámicos
+            Object.keys(savedData).forEach(fieldName => {
+                if (fieldName.includes('step_4_') || fieldName.includes('step_5_') || fieldName.includes('step_6_')) {
+                    const stepId = fieldName.substring(0, fieldName.indexOf('_', fieldName.indexOf('_', fieldName.indexOf('_') + 1) + 1));
+                    if (!stepIds.has(stepId)) {
+                        stepIds.add(stepId);
+                        dynamicSteps.push({
+                            stepId: stepId,
+                            data: {}
+                        });
+                    }
+                }
+            });
+            
+            // Agrupar datos por stepId
+            dynamicSteps.forEach(step => {
+                Object.keys(savedData).forEach(fieldName => {
+                    if (fieldName.startsWith(step.stepId + '_')) {
+                        step.data[fieldName] = savedData[fieldName];
+                    }
+                });
+            });
+            
+            return dynamicSteps;
+        }
+        
+        function recreateDynamicSteps(dynamicSteps) {
+            dynamicSteps.forEach(step => {
+                console.log('Recreando paso:', step.stepId);
+                
+                // Agregar el paso dinámico
+                const container = document.getElementById('wac-steps-container');
+                const stepCount = container.children.length + 1;
+                
+                const newStep = document.createElement('div');
+                newStep.className = 'wac-step';
+                newStep.setAttribute('data-step', stepCount);
+                newStep.setAttribute('data-step-id', step.stepId);
+                
+                // Obtener el tipo del paso
+                const stepType = step.data[step.stepId + '_type'] || 'message';
+                
+                newStep.innerHTML = generateStepHTML(stepCount, step.stepId, stepType);
+                container.appendChild(newStep);
+                
+                // Aplicar los datos guardados al nuevo paso
+                Object.keys(step.data).forEach(fieldName => {
+                    const field = newStep.querySelector(`[name="${fieldName}"]`);
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            field.checked = step.data[fieldName] === 'on' || step.data[fieldName] === true;
+                        } else {
+                            field.value = step.data[fieldName];
+                        }
+                    }
+                });
+                
+                // Actualizar números de paso
+                updateStepNumbers();
+            });
+        }
+        
+        function generateStepHTML(stepNumber, stepId, type) {
+            return `
+                <div class="wac-step-header">
+                    <span class="wac-step-number">${stepNumber}</span>
+                    <span class="wac-step-title">Paso ${stepNumber}</span>
+                    <button class="wac-step-delete" onclick="deleteStep(${stepNumber})">×</button>
+                </div>
+                <div class="wac-step-content">
+                    <label>Tipo de paso:</label>
+                    <select name="${stepId}_type" onchange="updateStepType('${stepId}', this.value)">
+                        <option value="message" ${type === 'message' ? 'selected' : ''}>Mensaje</option>
+                        <option value="question" ${type === 'question' ? 'selected' : ''}>Pregunta con opciones</option>
+                        <option value="form" ${type === 'form' ? 'selected' : ''}>Formulario</option>
+                        <option value="redirect" ${type === 'redirect' ? 'selected' : ''}>Redirección</option>
+                    </select>
+                    
+                    <div id="${stepId}_content">
+                        <label>Mensaje:</label>
+                        <textarea name="${stepId}_message" placeholder="Escribe tu mensaje..."></textarea>
+                        
+                        <label>Siguiente paso:</label>
+                        <select name="${stepId}_next">
+                            <option value="">Seleccionar...</option>
+                            <option value="whatsapp">WhatsApp directo</option>
+                            <option value="redirect">Redirección</option>
+                            <option value="end">Finalizar</option>
+                        </select>
+                        
+                        <div class="wac-step-options" id="${stepId}_options" style="display:none;">
+                            <label>Opciones (para preguntas):</label>
+                            <div class="wac-options">
+                                <div class="wac-option">
+                                    <input type="text" name="${stepId}_option_1_text" placeholder="Texto del botón">
+                                    <select name="${stepId}_option_1_action">
+                                        <option value="next">Siguiente paso</option>
+                                        <option value="whatsapp">WhatsApp</option>
+                                        <option value="redirect">Redirección</option>
+                                    </select>
+                                    <input type="text" name="${stepId}_option_1_url" placeholder="URL (si es redirección)" style="display:none;">
+                                </div>
+                            </div>
+                            <button type="button" class="button button-small" onclick="addOptionToStep('${stepId}')">+ Agregar Opción</button>
+                        </div>
+                        
+                        <div class="wac-step-form" id="${stepId}_form" style="display:none;">
+                            <label>Campos del formulario:</label>
+                            <div class="wac-form-fields">
+                                <div class="wac-field">
+                                    <label>
+                                        <input type="checkbox" name="${stepId}_field_nombre" checked> Nombre (requerido)
+                                    </label>
+                                </div>
+                                <div class="wac-field">
+                                    <label>
+                                        <input type="checkbox" name="${stepId}_field_email" checked> Email (requerido)
+                                    </label>
+                                </div>
+                                <div class="wac-field">
+                                    <label>
+                                        <input type="checkbox" name="${stepId}_field_telefono"> Teléfono (opcional)
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
         
         function debugFunnelData() {
