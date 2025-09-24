@@ -118,8 +118,8 @@ class WAC_Chat_YAML_Processor {
             return new WP_Error('validation_failed', $validation['message'], $validation['errors']);
         }
         
-        // Sanitizar datos
-        $sanitized = self::sanitize_funnel_data($parsed);
+        // NO sanitizar para preservar estructura original
+        $sanitized = $parsed;
         
         // Convertir a JSON para almacenamiento
         $json_data = wp_json_encode($sanitized, JSON_UNESCAPED_UNICODE);
