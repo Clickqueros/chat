@@ -44,7 +44,8 @@ function wac_chat_funnels_load_classes() {
         'WAC_Chat_Leads' => 'class-leads.php',
                 'WAC_Chat_YAML_Processor' => 'class-yaml-processor.php',
                 'WAC_Chat_Simple_YAML_Parser' => 'class-simple-yaml-parser.php',
-                'WAC_Chat_Improved_YAML_Parser' => 'class-improved-yaml-parser.php'
+                'WAC_Chat_Improved_YAML_Parser' => 'class-improved-yaml-parser.php',
+                'WAC_Chat_Preserve_YAML_Parser' => 'class-preserve-yaml-parser.php'
     );
 
     foreach ($classes as $class_name => $file_name) {
