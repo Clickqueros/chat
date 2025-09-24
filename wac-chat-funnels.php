@@ -151,9 +151,19 @@ class WAC_Chat_Funnels_Simple {
             
             <div class="wac-builder-actions">
                 <button type="button" class="button button-primary" onclick="addNewStep()">+ Agregar Paso</button>
-                <button type="button" class="button" onclick="saveFunnelConfig()">💾 Guardar Cambios</button>
                 <button type="button" class="button" onclick="loadFunnelConfig()">🔄 Cargar Guardado</button>
                 <button type="button" class="button" onclick="clearAllSteps()">🗑️ Limpiar Todo</button>
+            </div>
+            
+            <div style="margin-top: 15px; padding: 10px; background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: 4px; font-size: 13px;">
+                <strong>💡 Cómo funciona:</strong><br>
+                • Los cambios se guardan automáticamente mientras escribes<br>
+                • Haz clic en <strong>"Actualizar"</strong> (botón azul arriba) para guardar permanentemente<br>
+                • Solo necesitas un botón de guardado: el de WordPress
+            </div>
+            
+            <div style="margin-top: 10px;">
+                <button type="button" class="button button-small" onclick="debugSaveStatus()">🔍 Ver Estado de Guardado</button>
             </div>
             
             <div id="wac-save-notice" style="display:none; margin-top: 15px; padding: 10px; border-radius: 4px;"></div>
@@ -260,6 +270,26 @@ class WAC_Chat_Funnels_Simple {
             console.log('Datos del funnel:', funnelData);
         }
         
+        function autoSaveSilent() {
+            const funnelData = {};
+            const steps = document.querySelectorAll('.wac-step');
+            
+            steps.forEach(step => {
+                const stepId = step.getAttribute('data-step-id');
+                const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
+                const nextField = step.querySelector(`select[name="${stepId}_next"]`);
+                
+                if (messageField && nextField) {
+                    funnelData[`${stepId}_message`] = messageField.value;
+                    funnelData[`${stepId}_next`] = nextField.value;
+                }
+            });
+            
+            // Guardar silenciosamente en campo oculto
+            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
+            hiddenField.value = JSON.stringify(funnelData);
+        }
+        
         function loadFunnelConfig() {
             if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
                 console.log('Cargando configuración guardada:', wacSavedSteps);
@@ -343,8 +373,58 @@ class WAC_Chat_Funnels_Simple {
             }, 3000);
         }
         
-        // Auto-guardar cada 5 segundos
-        setInterval(saveFunnelConfig, 5000);
+        function debugSaveStatus() {
+            const hiddenField = document.getElementById('wac-funnel-steps-hidden');
+            const steps = document.querySelectorAll('.wac-step');
+            
+            let debugInfo = `🔍 DEBUG - Estado de Guardado\n\n`;
+            debugInfo += `📊 Pasos en pantalla: ${steps.length}\n`;
+            debugInfo += `💾 Campo oculto: ${hiddenField.value.length} caracteres\n\n`;
+            
+            if (steps.length > 0) {
+                debugInfo += `📝 Datos actuales:\n`;
+                steps.forEach((step, index) => {
+                    const stepId = step.getAttribute('data-step-id');
+                    const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
+                    const nextField = step.querySelector(`select[name="${stepId}_next"]`);
+                    
+                    debugInfo += `Paso ${index + 1} (${stepId}):\n`;
+                    debugInfo += `  Mensaje: "${messageField ? messageField.value : 'NO ENCONTRADO'}"\n`;
+                    debugInfo += `  Acción: "${nextField ? nextField.value : 'NO ENCONTRADO'}"\n\n`;
+                });
+            }
+            
+            if (hiddenField.value) {
+                try {
+                    const savedData = JSON.parse(hiddenField.value);
+                    debugInfo += `💾 Datos guardados en campo oculto:\n`;
+                    debugInfo += JSON.stringify(savedData, null, 2);
+                } catch (e) {
+                    debugInfo += `❌ Error al parsear datos guardados: ${e.message}\n`;
+                    debugInfo += `Contenido: ${hiddenField.value}`;
+                }
+            } else {
+                debugInfo += `❌ Campo oculto está vacío`;
+            }
+            
+            alert(debugInfo);
+        }
+        
+        // Auto-guardado silencioso cada 2 segundos
+        setInterval(autoSaveSilent, 2000);
+        
+        // Event listeners para guardar automáticamente cuando cambie algo
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('textarea[name*="_message"], select[name*="_next"]')) {
+                autoSaveSilent();
+            }
+        });
+        
+        document.addEventListener('change', function(e) {
+            if (e.target.matches('select[name*="_next"]')) {
+                autoSaveSilent();
+            }
+        });
         
         // Cargar configuración al iniciar
         document.addEventListener('DOMContentLoaded', function() {
