@@ -598,8 +598,8 @@ class WAC_Chat_Funnels_Simple {
         // Función para agregar un campo al formulario
         function addFormField(formOptionId) {
             const fieldsContainer = document.getElementById(`form_fields_${formOptionId}`);
-            const fieldId = Date.now();
             const fieldCount = fieldsContainer.children.length + 1;
+            const fieldId = `field_${fieldCount}`;
             
             console.log('addFormField llamado:', formOptionId, fieldId, fieldCount);
             
@@ -793,6 +793,10 @@ class WAC_Chat_Funnels_Simple {
                             const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
                             const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
                             
+                            console.log('Buscando campos con patrón:', `form_${formOptionId}_field_`);
+                            console.log('Todos los textareas encontrados:', step.querySelectorAll('textarea'));
+                            console.log('Textareas con patrón específico:', fieldOptions);
+                            
                             console.log('=== DEBUG FORMULARIO ===');
                             console.log('formOptionId:', formOptionId);
                             console.log('fieldLabels encontrados:', fieldLabels.length);
@@ -945,6 +949,10 @@ class WAC_Chat_Funnels_Simple {
                             const fieldTypes = step.querySelectorAll(`select[name^="form_${formOptionId}_field_"][name$="_type"]`);
                             const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
                             const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
+                            
+                            console.log('Buscando campos con patrón:', `form_${formOptionId}_field_`);
+                            console.log('Todos los textareas encontrados:', step.querySelectorAll('textarea'));
+                            console.log('Textareas con patrón específico:', fieldOptions);
                             
                             console.log('=== DEBUG FORMULARIO ===');
                             console.log('formOptionId:', formOptionId);
