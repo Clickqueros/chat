@@ -41,6 +41,7 @@
     margin: 0;
     font-size: 16px;
     font-weight: 600;
+    color: var(--wac-chat-title-color, white) !important;
 }
 
 .wac-widget-close {

@@ -360,6 +360,20 @@ class WAC_Chat_Funnels_Simple {
                     <p class="description"><?php _e('Color del botón flotante para abrir el chat', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
+            <tr>
+                <th scope="row"><?php _e('Título del Chat', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="text" id="wac_chat_title" name="wac_chat_title" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_chat_title', true) ?: 'Asistente Virtual'); ?>" placeholder="Ej: Asistente Virtual, Soporte, Ayuda" style="width: 100%; margin-bottom: 10px;" />
+                    <p class="description"><?php _e('Texto que aparece en el encabezado del chat', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color del Título del Chat', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_chat_title_color" name="wac_chat_title_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_chat_title_color', true) ?: '#ffffff'); ?>" />
+                    <p class="description"><?php _e('Color del texto del título en el encabezado', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
         </table>
         
         <h3>📱 Contactos de WhatsApp</h3>
@@ -1696,6 +1710,14 @@ class WAC_Chat_Funnels_Simple {
             update_post_meta($post_id, '_wac_toggle_color', sanitize_hex_color($_POST['wac_toggle_color']));
         }
         
+        if (isset($_POST['wac_chat_title'])) {
+            update_post_meta($post_id, '_wac_chat_title', sanitize_text_field($_POST['wac_chat_title']));
+        }
+        
+        if (isset($_POST['wac_chat_title_color'])) {
+            update_post_meta($post_id, '_wac_chat_title_color', sanitize_hex_color($_POST['wac_chat_title_color']));
+        }
+        
         // Guardar pasos del funnel
         if (isset($_POST['wac_funnel_steps'])) {
             $steps_data = json_decode(stripslashes($_POST['wac_funnel_steps']), true);
@@ -1829,13 +1851,15 @@ class WAC_Chat_Funnels_Simple {
         $teaser_text = get_post_meta($funnel_data->ID, '_wac_teaser_text', true) ?: '¿Necesitas ayuda?';
         $teaser_delay = get_post_meta($funnel_data->ID, '_wac_teaser_delay', true) ?: 3000;
         
-        // Obtener colores personalizados
+        // Obtener colores y título personalizados
         $header_color = get_post_meta($funnel_data->ID, '_wac_header_color', true) ?: '#ff6b35';
         $header_text_color = get_post_meta($funnel_data->ID, '_wac_header_text_color', true) ?: '#ffffff';
         $button_bg_color = get_post_meta($funnel_data->ID, '_wac_button_bg_color', true) ?: '#ff6b35';
         $button_text_color = get_post_meta($funnel_data->ID, '_wac_button_text_color', true) ?: '#ffffff';
         $button_border_color = get_post_meta($funnel_data->ID, '_wac_button_border_color', true) ?: '#ff6b35';
         $toggle_color = get_post_meta($funnel_data->ID, '_wac_toggle_color', true) ?: '#ff6b35';
+        $chat_title = get_post_meta($funnel_data->ID, '_wac_chat_title', true) ?: 'Asistente Virtual';
+        $chat_title_color = get_post_meta($funnel_data->ID, '_wac_chat_title_color', true) ?: '#ffffff';
         ?>
         
         <style>
@@ -1846,6 +1870,7 @@ class WAC_Chat_Funnels_Simple {
             --wac-button-text-color: <?php echo esc_attr($button_text_color); ?>;
             --wac-button-border-color: <?php echo esc_attr($button_border_color); ?>;
             --wac-toggle-color: <?php echo esc_attr($toggle_color); ?>;
+            --wac-chat-title-color: <?php echo esc_attr($chat_title_color); ?>;
         }
         </style>
         
@@ -1856,7 +1881,7 @@ class WAC_Chat_Funnels_Simple {
         
         <div id="wac-chat-widget" class="wac-open">
             <div class="wac-widget-header">
-                <h3 class="wac-widget-title">Asistente Virtual</h3>
+                <h3 class="wac-widget-title"><?php echo esc_html($chat_title); ?></h3>
                 <button class="wac-widget-close">×</button>
             </div>
             <div class="wac-widget-content">
