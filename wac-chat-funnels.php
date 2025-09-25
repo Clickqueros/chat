@@ -301,19 +301,30 @@ class WAC_Chat_Funnels_Simple {
         }
         
         function loadFunnelConfig() {
+            console.log('=== INICIANDO LOADFUNNELCONFIG ===');
+            console.log('wacSavedSteps:', wacSavedSteps);
+            
             if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
                 console.log('Cargando configuración guardada:', wacSavedSteps);
                 
                 // Limpiar pasos existentes
                 const container = document.getElementById('wac-steps-container');
+                if (!container) {
+                    console.error('No se encontró el contenedor wac-steps-container');
+                    return;
+                }
                 container.innerHTML = '';
+                console.log('Contenedor limpiado');
                 
                 // Recrear pasos desde datos guardados
                 const stepIds = new Set();
                 Object.keys(wacSavedSteps).forEach(fieldName => {
+                    console.log('Procesando campo:', fieldName);
                     const match = fieldName.match(/^(step_\d+_\d+)_/);
                     if (match) {
-                        stepIds.add(match[1]);
+                        const stepId = match[1];
+                        console.log('Step ID encontrado:', stepId);
+                        stepIds.add(stepId);
                     }
                 });
                 
@@ -322,7 +333,13 @@ class WAC_Chat_Funnels_Simple {
                 if (stepIds.size > 0) {
                     let stepNumber = 1;
                     stepIds.forEach(stepId => {
-                        console.log(`Recreando paso: ${stepId}`);
+                        console.log(`Recreando paso ${stepNumber}: ${stepId}`);
+                        
+                        const messageValue = wacSavedSteps[stepId + '_message'] || '';
+                        const nextValue = wacSavedSteps[stepId + '_next'] || '';
+                        
+                        console.log(`  Mensaje: "${messageValue}"`);
+                        console.log(`  Next: "${nextValue}"`);
                         
                         const newStep = document.createElement('div');
                         newStep.className = 'wac-step';
@@ -336,13 +353,13 @@ class WAC_Chat_Funnels_Simple {
                             </div>
                             <div class="wac-step-content">
                                 <label>Mensaje:</label>
-                                <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí...">${wacSavedSteps[stepId + '_message'] || ''}</textarea>
+                                <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí...">${messageValue}</textarea>
                                 
                                 <label>Después de este mensaje:</label>
                                 <select name="${stepId}_next">
                                     <option value="">Seleccionar...</option>
-                                    <option value="whatsapp" ${wacSavedSteps[stepId + '_next'] === 'whatsapp' ? 'selected' : ''}>Ir a WhatsApp</option>
-                                    <option value="end" ${wacSavedSteps[stepId + '_next'] === 'end' ? 'selected' : ''}>Finalizar chat</option>
+                                    <option value="whatsapp" ${nextValue === 'whatsapp' ? 'selected' : ''}>Ir a WhatsApp</option>
+                                    <option value="end" ${nextValue === 'end' ? 'selected' : ''}>Finalizar chat</option>
                                 </select>
                                 
                                 <div class="wac-tip">
@@ -352,16 +369,20 @@ class WAC_Chat_Funnels_Simple {
                         `;
                         
                         container.appendChild(newStep);
+                        console.log(`Paso ${stepNumber} agregado al DOM`);
                         stepNumber++;
                     });
                     
                     updateStepNumbers();
                     showNotice(`✅ ${stepIds.size} paso(s) cargado(s) desde la base de datos.`, 'success');
+                    console.log('Configuración cargada exitosamente');
                 } else {
                     showNotice('⚠️ No se encontraron pasos en los datos guardados.', 'warning');
+                    console.log('No se encontraron step IDs válidos');
                 }
             } else {
                 showNotice('⚠️ No hay configuración guardada.', 'warning');
+                console.log('No hay datos guardados');
             }
         }
         
@@ -475,8 +496,12 @@ class WAC_Chat_Funnels_Simple {
         
         // Cargar configuración al iniciar
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, verificando datos guardados...');
             if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
+                console.log('Datos encontrados, cargando configuración...');
                 loadFunnelConfig();
+            } else {
+                console.log('No hay datos guardados para cargar');
             }
         });
         </script>
