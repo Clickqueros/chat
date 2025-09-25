@@ -148,14 +148,8 @@
             stepHTML += '</div>';
         } else {
             console.log('WAC Frontend - No hay opciones o están vacías');
-            // Si no hay opciones, NO mostrar botón automático
-            // El usuario debe configurar opciones para navegar
-            stepHTML += `
-                <div class="wac-warning">
-                    <strong>⚠️ Sin opciones configuradas</strong>
-                    <small>Este paso no tiene opciones. Configura opciones en el editor para permitir la navegación.</small>
-                </div>
-            `;
+            // Si no hay opciones, no mostrar nada adicional
+            // Solo el mensaje del paso
         }
         
         widgetContent.innerHTML = stepHTML;
