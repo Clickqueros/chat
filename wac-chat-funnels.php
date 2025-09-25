@@ -646,14 +646,17 @@ class WAC_Chat_Funnels_Simple {
         // Función para manejar el cambio de tipo de campo
         function handleFieldTypeChange(formOptionId, fieldId, fieldType) {
             const optionsContainer = document.getElementById(`field_options_${formOptionId}_${fieldId}`);
+            console.log('handleFieldTypeChange llamado:', formOptionId, fieldId, fieldType);
             
             if (fieldType === 'select') {
                 optionsContainer.innerHTML = `
                     <label>Opciones (una por línea):</label>
                     <textarea name="form_${formOptionId}_field_${fieldId}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
                 `;
+                console.log('Textarea de opciones creado para select');
             } else {
                 optionsContainer.innerHTML = '';
+                console.log('Opciones limpiadas para tipo:', fieldType);
             }
         }
         
@@ -776,20 +779,41 @@ class WAC_Chat_Funnels_Simple {
                             const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
                             const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
                             
+                            console.log('=== DEBUG FORMULARIO ===');
+                            console.log('formOptionId:', formOptionId);
+                            console.log('fieldLabels encontrados:', fieldLabels.length);
+                            console.log('fieldTypes encontrados:', fieldTypes.length);
+                            console.log('fieldRequired encontrados:', fieldRequired.length);
+                            console.log('fieldOptions encontrados:', fieldOptions.length);
+                            
                             fieldLabels.forEach((labelInput, fieldIndex) => {
                                 if (labelInput.value.trim()) {
+                                    console.log(`Procesando campo ${fieldIndex}:`, labelInput.value.trim());
+                                    
                                     const field = {
                                         label: labelInput.value.trim(),
                                         type: fieldTypes[fieldIndex] ? fieldTypes[fieldIndex].value : 'text',
                                         required: fieldRequired[fieldIndex] ? fieldRequired[fieldIndex].checked : false
                                     };
                                     
+                                    console.log('Campo creado:', field);
+                                    
                                     // Si es un campo select, agregar las opciones
                                     if (field.type === 'select' && fieldOptions[fieldIndex]) {
                                         const optionsText = fieldOptions[fieldIndex].value.trim();
-                                        console.log('Guardando opciones select:', optionsText);
-                                        field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
-                                        console.log('Opciones procesadas:', field.options);
+                                        console.log('Campo SELECT detectado!');
+                                        console.log('Textarea encontrado:', fieldOptions[fieldIndex]);
+                                        console.log('Valor del textarea:', optionsText);
+                                        console.log('Longitud del valor:', optionsText.length);
+                                        
+                                        if (optionsText) {
+                                            field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                            console.log('Opciones procesadas:', field.options);
+                                        } else {
+                                            console.log('Textarea vacío, no se agregan opciones');
+                                        }
+                                    } else {
+                                        console.log('No es select o no hay textarea:', field.type, !!fieldOptions[fieldIndex]);
                                     }
                                     
                                     formFields.push(field);
@@ -902,20 +926,41 @@ class WAC_Chat_Funnels_Simple {
                             const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
                             const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
                             
+                            console.log('=== DEBUG FORMULARIO ===');
+                            console.log('formOptionId:', formOptionId);
+                            console.log('fieldLabels encontrados:', fieldLabels.length);
+                            console.log('fieldTypes encontrados:', fieldTypes.length);
+                            console.log('fieldRequired encontrados:', fieldRequired.length);
+                            console.log('fieldOptions encontrados:', fieldOptions.length);
+                            
                             fieldLabels.forEach((labelInput, fieldIndex) => {
                                 if (labelInput.value.trim()) {
+                                    console.log(`Procesando campo ${fieldIndex}:`, labelInput.value.trim());
+                                    
                                     const field = {
                                         label: labelInput.value.trim(),
                                         type: fieldTypes[fieldIndex] ? fieldTypes[fieldIndex].value : 'text',
                                         required: fieldRequired[fieldIndex] ? fieldRequired[fieldIndex].checked : false
                                     };
                                     
+                                    console.log('Campo creado:', field);
+                                    
                                     // Si es un campo select, agregar las opciones
                                     if (field.type === 'select' && fieldOptions[fieldIndex]) {
                                         const optionsText = fieldOptions[fieldIndex].value.trim();
-                                        console.log('Guardando opciones select:', optionsText);
-                                        field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
-                                        console.log('Opciones procesadas:', field.options);
+                                        console.log('Campo SELECT detectado!');
+                                        console.log('Textarea encontrado:', fieldOptions[fieldIndex]);
+                                        console.log('Valor del textarea:', optionsText);
+                                        console.log('Longitud del valor:', optionsText.length);
+                                        
+                                        if (optionsText) {
+                                            field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                            console.log('Opciones procesadas:', field.options);
+                                        } else {
+                                            console.log('Textarea vacío, no se agregan opciones');
+                                        }
+                                    } else {
+                                        console.log('No es select o no hay textarea:', field.type, !!fieldOptions[fieldIndex]);
                                     }
                                     
                                     formFields.push(field);
