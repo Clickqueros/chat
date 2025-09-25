@@ -149,22 +149,14 @@
             stepHTML += '</div>';
         } else {
             console.log('WAC Frontend - No hay opciones o están vacías');
-            // Si no hay opciones, mostrar botón de continuar (comportamiento anterior)
-            if (currentStep === funnelSteps.length - 1) {
-                // Último paso
-                stepHTML += `
-                    <button class="wac-button wac-finish-btn" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                        ✅ Finalizar Chat
-                    </button>
-                `;
-            } else {
-                // Paso intermedio
-                stepHTML += `
-                    <button class="wac-button wac-next-btn" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                        ➡️ Continuar
-                    </button>
-                `;
-            }
+            // Si no hay opciones, NO mostrar botón automático
+            // El usuario debe configurar opciones para navegar
+            stepHTML += `
+                <div style="padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin-top: 10px; text-align: center; color: #856404;">
+                    <strong>⚠️ Sin opciones configuradas</strong><br>
+                    <small>Este paso no tiene opciones. Configura opciones en el editor para permitir la navegación.</small>
+                </div>
+            `;
         }
         
         widgetContent.innerHTML = stepHTML;
@@ -196,23 +188,8 @@
             });
         });
         
-        // Event listener para botón "Continuar"
-        const nextButton = widgetContent.querySelector('.wac-next-btn');
-        if (nextButton) {
-            nextButton.addEventListener('click', function() {
-                console.log('WAC Frontend - Botón Continuar clickeado');
-                nextStep();
-            });
-        }
-        
-        // Event listener para botón "Finalizar"
-        const finishButton = widgetContent.querySelector('.wac-finish-btn');
-        if (finishButton) {
-            finishButton.addEventListener('click', function() {
-                console.log('WAC Frontend - Botón Finalizar clickeado');
-                finishChat();
-            });
-        }
+        // Los botones "Continuar" y "Finalizar" ya no existen
+        // Solo se navega mediante opciones específicas
     }
     
     function nextStep() {
