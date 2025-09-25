@@ -256,6 +256,20 @@ class WAC_Chat_Funnels_Simple {
             </tr>
         </table>
         
+        <h3>📱 Contactos de WhatsApp</h3>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Contactos', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <div id="wac-whatsapp-contacts">
+                        <!-- Los contactos se agregarán aquí dinámicamente -->
+                    </div>
+                    <button type="button" class="button" onclick="addWhatsAppContact()">+ Añadir nuevo contacto WhatsApp</button>
+                    <p class="description"><?php _e('Agrega múltiples contactos de WhatsApp para usar en los pasos', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
         <h3>🚀 Editor de Funnel - SOLO TIPO MENSAJE</h3>
         <p><strong>Instrucciones:</strong> Haz clic en "+ Agregar Paso" para crear mensajes simples. Cada paso solo tiene un mensaje y una acción.</p>
         
@@ -329,12 +343,15 @@ class WAC_Chat_Funnels_Simple {
                         <div class="wac-options-list" id="options_${stepId}">
                             <!-- Las opciones se agregarán aquí dinámicamente -->
                         </div>
-                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                             <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
                                 + Añadir opción
                             </button>
                             <button type="button" class="wac-add-option-btn" onclick="addLinkOption('${stepId}')" style="background: #28a745; border-color: #28a745;">
                                 🔗 Añadir enlace
+                            </button>
+                            <button type="button" class="wac-add-option-btn" onclick="addWhatsAppContactOption('${stepId}')" style="background: #25d366; border-color: #25d366;">
+                                📱 Añadir contacto
                             </button>
                         </div>
                     </div>
@@ -399,14 +416,93 @@ class WAC_Chat_Funnels_Simple {
         
         // Función para eliminar una opción
         function removeOption(stepId, optionId) {
-            // Buscar tanto opciones normales como de enlace
+            // Buscar opciones normales, de enlace y de WhatsApp
             let option = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`).closest('.wac-option-item');
             if (!option) {
                 option = document.querySelector(`input[name="${stepId}_link_text_${optionId}"]`).closest('.wac-option-item');
             }
+            if (!option) {
+                option = document.querySelector(`input[name="${stepId}_whatsapp_text_${optionId}"]`).closest('.wac-option-item');
+            }
             if (option) {
                 option.remove();
             }
+        }
+        
+        // Función para agregar un contacto WhatsApp
+        function addWhatsAppContact() {
+            const container = document.getElementById('wac-whatsapp-contacts');
+            const contactId = Date.now();
+            const contactCount = container.children.length + 1;
+            
+            const contactDiv = document.createElement('div');
+            contactDiv.className = 'wac-whatsapp-contact';
+            contactDiv.style.cssText = 'margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;';
+            contactDiv.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <strong>WhatsApp ${contactCount}:</strong>
+                    <input type="text" name="wac_whatsapp_contact_${contactId}" placeholder="Número (ej: +573001234567)" style="flex: 1;" />
+                    <button type="button" class="button" onclick="removeWhatsAppContact('${contactId}')">Eliminar</button>
+                </div>
+            `;
+            
+            container.appendChild(contactDiv);
+        }
+        
+        // Función para eliminar un contacto WhatsApp
+        function removeWhatsAppContact(contactId) {
+            const contact = document.querySelector(`input[name="wac_whatsapp_contact_${contactId}"]`).closest('.wac-whatsapp-contact');
+            if (contact) {
+                contact.remove();
+                updateWhatsAppContactNumbers();
+            }
+        }
+        
+        // Función para actualizar los números de los contactos WhatsApp
+        function updateWhatsAppContactNumbers() {
+            const contacts = document.querySelectorAll('.wac-whatsapp-contact');
+            contacts.forEach((contact, index) => {
+                const label = contact.querySelector('strong');
+                if (label) {
+                    label.textContent = `WhatsApp ${index + 1}:`;
+                }
+            });
+        }
+        
+        // Función para agregar una opción de contacto WhatsApp a un paso
+        function addWhatsAppContactOption(stepId) {
+            const optionsList = document.getElementById(`options_${stepId}`);
+            const optionId = Date.now();
+            
+            // Obtener contactos disponibles
+            const contacts = document.querySelectorAll('input[name^="wac_whatsapp_contact_"]');
+            let contactOptions = '';
+            contacts.forEach((contact, index) => {
+                const contactNumber = contact.value.trim();
+                if (contactNumber) {
+                    contactOptions += `<option value="${index + 1}">WhatsApp ${index + 1} (${contactNumber})</option>`;
+                }
+            });
+            
+            if (!contactOptions) {
+                alert('Primero agrega contactos de WhatsApp en la configuración');
+                return;
+            }
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'wac-option-item wac-whatsapp-contact-option';
+            optionDiv.innerHTML = `
+                <div class="wac-option-fields">
+                    <input type="text" name="${stepId}_whatsapp_text_${optionId}" placeholder="Texto del contacto (ej: Hablar con ventas)" class="wac-option-text">
+                    <select name="${stepId}_whatsapp_contact_${optionId}" class="wac-option-target">
+                        <option value="">Seleccionar contacto</option>
+                        ${contactOptions}
+                    </select>
+                    <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                </div>
+            `;
+            
+            optionsList.appendChild(optionDiv);
         }
         
         function updateStepNumbers() {
@@ -429,6 +525,16 @@ class WAC_Chat_Funnels_Simple {
             const funnelData = {};
             const steps = document.querySelectorAll('.wac-step');
             
+            // Guardar contactos de WhatsApp
+            const whatsappContacts = document.querySelectorAll('input[name^="wac_whatsapp_contact_"]');
+            const contacts = [];
+            whatsappContacts.forEach(contact => {
+                if (contact.value.trim()) {
+                    contacts.push(contact.value.trim());
+                }
+            });
+            funnelData['whatsapp_contacts'] = contacts;
+            
             steps.forEach(step => {
                 const stepId = step.getAttribute('data-step-id');
                 const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
@@ -436,11 +542,13 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso (normales y de enlace)
+                    // Recopilar opciones del paso (normales, de enlace y de WhatsApp)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
                     const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
                     const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
+                    const whatsappTexts = step.querySelectorAll(`input[name^="${stepId}_whatsapp_text_"]`);
+                    const whatsappContacts = step.querySelectorAll(`select[name^="${stepId}_whatsapp_contact_"]`);
                     
                     const options = [];
                     
@@ -464,6 +572,18 @@ class WAC_Chat_Funnels_Simple {
                                 text: textInput.value.trim(),
                                 url: urlInput.value.trim(),
                                 type: 'link'
+                            });
+                        }
+                    });
+                    
+                    // Agregar opciones de WhatsApp
+                    whatsappTexts.forEach((textInput, index) => {
+                        const contactSelect = whatsappContacts[index];
+                        if (textInput.value.trim() && contactSelect.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                contact: parseInt(contactSelect.value),
+                                type: 'whatsapp'
                             });
                         }
                     });
@@ -486,6 +606,16 @@ class WAC_Chat_Funnels_Simple {
             const funnelData = {};
             const steps = document.querySelectorAll('.wac-step');
             
+            // Guardar contactos de WhatsApp
+            const whatsappContacts = document.querySelectorAll('input[name^="wac_whatsapp_contact_"]');
+            const contacts = [];
+            whatsappContacts.forEach(contact => {
+                if (contact.value.trim()) {
+                    contacts.push(contact.value.trim());
+                }
+            });
+            funnelData['whatsapp_contacts'] = contacts;
+            
             steps.forEach(step => {
                 const stepId = step.getAttribute('data-step-id');
                 const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
@@ -493,11 +623,13 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso (normales y de enlace)
+                    // Recopilar opciones del paso (normales, de enlace y de WhatsApp)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
                     const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
                     const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
+                    const whatsappTexts = step.querySelectorAll(`input[name^="${stepId}_whatsapp_text_"]`);
+                    const whatsappContacts = step.querySelectorAll(`select[name^="${stepId}_whatsapp_contact_"]`);
                     
                     const options = [];
                     
@@ -525,6 +657,18 @@ class WAC_Chat_Funnels_Simple {
                         }
                     });
                     
+                    // Agregar opciones de WhatsApp
+                    whatsappTexts.forEach((textInput, index) => {
+                        const contactSelect = whatsappContacts[index];
+                        if (textInput.value.trim() && contactSelect.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                contact: parseInt(contactSelect.value),
+                                type: 'whatsapp'
+                            });
+                        }
+                    });
+                    
                     funnelData[`${stepId}_options`] = options;
                 }
             });
@@ -537,6 +681,31 @@ class WAC_Chat_Funnels_Simple {
         function loadFunnelConfig() {
             console.log('=== INICIANDO LOADFUNNELCONFIG ===');
             console.log('wacSavedSteps:', wacSavedSteps);
+            
+            // Cargar contactos de WhatsApp primero
+            if (wacSavedSteps.whatsapp_contacts && Array.isArray(wacSavedSteps.whatsapp_contacts)) {
+                console.log('Cargando contactos WhatsApp:', wacSavedSteps.whatsapp_contacts);
+                const contactsContainer = document.getElementById('wac-whatsapp-contacts');
+                if (contactsContainer) {
+                    contactsContainer.innerHTML = '';
+                    wacSavedSteps.whatsapp_contacts.forEach((contactNumber, index) => {
+                        if (contactNumber.trim()) {
+                            const contactId = Date.now() + index;
+                            const contactDiv = document.createElement('div');
+                            contactDiv.className = 'wac-whatsapp-contact';
+                            contactDiv.style.cssText = 'margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;';
+                            contactDiv.innerHTML = `
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <strong>WhatsApp ${index + 1}:</strong>
+                                    <input type="text" name="wac_whatsapp_contact_${contactId}" placeholder="Número (ej: +573001234567)" style="flex: 1;" value="${contactNumber}" />
+                                    <button type="button" class="button" onclick="removeWhatsAppContact('${contactId}')">Eliminar</button>
+                                </div>
+                            `;
+                            contactsContainer.appendChild(contactDiv);
+                        }
+                    });
+                }
+            }
             
             if (typeof wacSavedSteps !== 'undefined' && wacSavedSteps && Object.keys(wacSavedSteps).length > 0) {
                 console.log('Cargando configuración guardada:', wacSavedSteps);
@@ -596,6 +765,29 @@ class WAC_Chat_Funnels_Simple {
                                             </div>
                                         </div>
                                     `;
+                                } else if (option.type === 'whatsapp') {
+                                    // Opción de WhatsApp
+                                    const contacts = wacSavedSteps.whatsapp_contacts || [];
+                                    let contactOptions = '';
+                                    contacts.forEach((contactNumber, index) => {
+                                        if (contactNumber.trim()) {
+                                            const selected = option.contact === (index + 1) ? 'selected' : '';
+                                            contactOptions += `<option value="${index + 1}" ${selected}>WhatsApp ${index + 1} (${contactNumber})</option>`;
+                                        }
+                                    });
+                                    
+                                    optionsHTML += `
+                                        <div class="wac-option-item wac-whatsapp-contact-option">
+                                            <div class="wac-option-fields">
+                                                <input type="text" name="${stepId}_whatsapp_text_${optionId}" placeholder="Texto del contacto (ej: Hablar con ventas)" class="wac-option-text" value="${option.text || ''}">
+                                                <select name="${stepId}_whatsapp_contact_${optionId}" class="wac-option-target">
+                                                    <option value="">Seleccionar contacto</option>
+                                                    ${contactOptions}
+                                                </select>
+                                                <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                            </div>
+                                        </div>
+                                    `;
                                 } else {
                                     // Opción normal de paso
                                     optionsHTML += `
@@ -626,12 +818,15 @@ class WAC_Chat_Funnels_Simple {
                                     <div class="wac-options-list" id="options_${stepId}">
                                         ${optionsHTML}
                                     </div>
-                                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                    <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
                                         <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
                                             + Añadir opción
                                         </button>
                                         <button type="button" class="wac-add-option-btn" onclick="addLinkOption('${stepId}')" style="background: #28a745; border-color: #28a745;">
                                             🔗 Añadir enlace
+                                        </button>
+                                        <button type="button" class="wac-add-option-btn" onclick="addWhatsAppContactOption('${stepId}')" style="background: #25d366; border-color: #25d366;">
+                                            📱 Añadir contacto
                                         </button>
                                     </div>
                                 </div>
