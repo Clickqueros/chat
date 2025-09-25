@@ -89,11 +89,14 @@
         `;
         
         // Mostrar opciones si existen
+        console.log('WAC Frontend - step.options:', step.options);
         if (step.options && Array.isArray(step.options) && step.options.length > 0) {
+            console.log('WAC Frontend - Mostrando opciones:', step.options.length);
             stepHTML += '<div class="wac-options" style="margin-bottom: 15px;">';
             
             step.options.forEach((option, index) => {
                 const targetStep = option.target - 1; // Convertir a índice base 0
+                console.log(`WAC Frontend - Opción ${index}:`, option.text, '-> paso', targetStep);
                 stepHTML += `
                     <button class="wac-option-button" onclick="goToStep(${targetStep})" 
                             style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
@@ -104,6 +107,7 @@
             
             stepHTML += '</div>';
         } else {
+            console.log('WAC Frontend - No hay opciones o están vacías');
             // Si no hay opciones, mostrar botón de continuar (comportamiento anterior)
             if (currentStep === funnelSteps.length - 1) {
                 // Último paso
@@ -132,6 +136,10 @@
     }
     
     function goToStep(stepIndex) {
+        console.log('WAC Frontend - goToStep llamado con:', stepIndex);
+        console.log('WAC Frontend - funnelSteps:', funnelSteps);
+        console.log('WAC Frontend - funnelSteps.length:', funnelSteps.length);
+        
         if (stepIndex >= 0 && stepIndex < funnelSteps.length) {
             currentStep = stepIndex;
             console.log('WAC Frontend - Yendo al paso:', currentStep);
