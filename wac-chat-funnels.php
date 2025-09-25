@@ -140,6 +140,52 @@ class WAC_Chat_Funnels_Simple {
             font-size: 12px;
         }
         
+        /* Estilos para drag & drop de campos */
+        .wac-form-field {
+            position: relative;
+            cursor: move;
+            transition: all 0.3s ease;
+        }
+        
+        .wac-form-field:hover {
+            border-color: #0073aa;
+            box-shadow: 0 2px 5px rgba(0,115,170,0.1);
+        }
+        
+        .wac-form-field.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+            z-index: 1000;
+        }
+        
+        .wac-form-field.drag-over {
+            border-color: #00a32a;
+            background: #f0f8f0;
+            transform: scale(1.02);
+        }
+        
+        .wac-drag-handle {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: move;
+            color: #666;
+            font-size: 16px;
+            padding: 5px;
+            border-radius: 3px;
+            transition: color 0.2s ease;
+        }
+        
+        .wac-drag-handle:hover {
+            color: #0073aa;
+            background: rgba(0,115,170,0.1);
+        }
+        
+        .wac-field-content {
+            margin-left: 35px;
+        }
+
         /* Estilos para opciones múltiples */
         .wac-options-section {
             margin-top: 15px;
@@ -606,11 +652,17 @@ class WAC_Chat_Funnels_Simple {
             const fieldDiv = document.createElement('div');
             fieldDiv.className = 'wac-form-field';
             fieldDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;';
+            fieldDiv.draggable = true;
+            fieldDiv.setAttribute('data-field-id', fieldId);
+            fieldDiv.setAttribute('data-form-option-id', formOptionId);
+            
             fieldDiv.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <strong>Campo ${fieldCount}</strong>
-                    <button type="button" class="button button-small" onclick="removeFormField('${formOptionId}', '${fieldId}')">Eliminar</button>
-                </div>
+                <div class="wac-drag-handle" title="Arrastrar para reordenar">⋮⋮</div>
+                <div class="wac-field-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <strong>Campo ${fieldCount}</strong>
+                        <button type="button" class="button button-small" onclick="removeFormField('${formOptionId}', '${fieldId}')">Eliminar</button>
+                    </div>
                 
                 <div style="margin-bottom: 10px;">
                     <label>Etiqueta del campo:</label>
@@ -637,10 +689,14 @@ class WAC_Chat_Funnels_Simple {
                         Campo obligatorio
                     </label>
                 </div>
+                </div>
             `;
             
             fieldsContainer.appendChild(fieldDiv);
             console.log('Campo agregado al DOM con ID:', `field_options_${formOptionId}_${fieldId}`);
+            
+            // Agregar event listeners para drag & drop
+            addDragAndDropListeners(fieldDiv);
             
             // Inicializar opciones del campo
             handleFieldTypeChange(formOptionId, fieldId, 'text');
@@ -693,6 +749,56 @@ class WAC_Chat_Funnels_Simple {
                 const title = field.querySelector('strong');
                 if (title) {
                     title.textContent = `Campo ${index + 1}`;
+                }
+            });
+        }
+        
+        // Función para agregar event listeners de drag & drop
+        function addDragAndDropListeners(fieldElement) {
+            fieldElement.addEventListener('dragstart', function(e) {
+                this.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', this.outerHTML);
+                e.dataTransfer.setData('text/plain', this.getAttribute('data-field-id'));
+                console.log('Iniciando arrastre del campo:', this.getAttribute('data-field-id'));
+            });
+            
+            fieldElement.addEventListener('dragend', function(e) {
+                this.classList.remove('dragging');
+                // Remover todas las clases drag-over
+                document.querySelectorAll('.wac-form-field').forEach(field => {
+                    field.classList.remove('drag-over');
+                });
+            });
+            
+            fieldElement.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            });
+            
+            fieldElement.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over');
+            });
+            
+            fieldElement.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                const draggedFieldId = e.dataTransfer.getData('text/plain');
+                const draggedElement = document.querySelector(`[data-field-id="${draggedFieldId}"]`);
+                const formOptionId = this.getAttribute('data-form-option-id');
+                
+                if (draggedElement && draggedElement !== this) {
+                    console.log('Reordenando campos:', draggedFieldId, 'a posición de', this.getAttribute('data-field-id'));
+                    
+                    // Insertar el elemento arrastrado antes del elemento actual
+                    this.parentNode.insertBefore(draggedElement, this);
+                    
+                    // Actualizar números de campos
+                    updateFormFieldNumbers(formOptionId);
+                    
+                    console.log('Campos reordenados exitosamente');
                 }
             });
         }
@@ -1179,11 +1285,13 @@ class WAC_Chat_Funnels_Simple {
                                             console.log('Campo SELECT encontrado con opciones:', field.options);
                                         }
                                         return `
-                                        <div class="wac-form-field" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;">
-                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                                <strong>Campo ${fieldIndex + 1}</strong>
-                                                <button type="button" class="button button-small" onclick="removeFormField('${optionId}', '${Date.now() + fieldIndex}')">Eliminar</button>
-                                            </div>
+                                        <div class="wac-form-field" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;" draggable="true" data-field-id="field_${fieldIndex + 1}" data-form-option-id="${optionId}">
+                                            <div class="wac-drag-handle" title="Arrastrar para reordenar">⋮⋮</div>
+                                            <div class="wac-field-content">
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                                    <strong>Campo ${fieldIndex + 1}</strong>
+                                                    <button type="button" class="button button-small" onclick="removeFormField('${optionId}', 'field_${fieldIndex + 1}')">Eliminar</button>
+                                                </div>
                                             <div style="margin-bottom: 10px;">
                                                 <label>Etiqueta del campo:</label>
                                                 <input type="text" name="form_${optionId}_field_${Date.now() + fieldIndex}_label" placeholder="Ej: Nombre, Email, Teléfono" style="width: 100%; margin-top: 5px;" value="${field.label || ''}">
@@ -1208,6 +1316,7 @@ class WAC_Chat_Funnels_Simple {
                                                     <input type="checkbox" name="form_${optionId}_field_${Date.now() + fieldIndex}_required" value="1" ${field.required ? 'checked' : ''}>
                                                     Campo obligatorio
                                                 </label>
+                                            </div>
                                             </div>
                                         </div>
                                     `;
@@ -1297,6 +1406,13 @@ class WAC_Chat_Funnels_Simple {
                         
                         container.appendChild(newStep);
                         console.log(`Paso ${stepNumber} agregado al DOM`);
+                        
+                        // Agregar event listeners de drag & drop a los campos del formulario
+                        const formFields = newStep.querySelectorAll('.wac-form-field');
+                        formFields.forEach(field => {
+                            addDragAndDropListeners(field);
+                        });
+                        
                         stepNumber++;
                     });
                     
