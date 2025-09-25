@@ -601,6 +601,8 @@ class WAC_Chat_Funnels_Simple {
             const fieldId = Date.now();
             const fieldCount = fieldsContainer.children.length + 1;
             
+            console.log('addFormField llamado:', formOptionId, fieldId, fieldCount);
+            
             const fieldDiv = document.createElement('div');
             fieldDiv.className = 'wac-form-field';
             fieldDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;';
@@ -638,6 +640,7 @@ class WAC_Chat_Funnels_Simple {
             `;
             
             fieldsContainer.appendChild(fieldDiv);
+            console.log('Campo agregado al DOM con ID:', `field_options_${formOptionId}_${fieldId}`);
             
             // Inicializar opciones del campo
             handleFieldTypeChange(formOptionId, fieldId, 'text');
@@ -649,11 +652,22 @@ class WAC_Chat_Funnels_Simple {
             console.log('handleFieldTypeChange llamado:', formOptionId, fieldId, fieldType);
             
             if (fieldType === 'select') {
+                const textareaName = `form_${formOptionId}_field_${fieldId}_options`;
                 optionsContainer.innerHTML = `
                     <label>Opciones (una por línea):</label>
-                    <textarea name="form_${formOptionId}_field_${fieldId}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
+                    <textarea name="${textareaName}" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
                 `;
-                console.log('Textarea de opciones creado para select');
+                console.log('Textarea de opciones creado para select con name:', textareaName);
+                
+                // Verificar que el textarea se creó correctamente
+                setTimeout(() => {
+                    const textarea = document.querySelector(`textarea[name="${textareaName}"]`);
+                    if (textarea) {
+                        console.log('✅ Textarea encontrado correctamente:', textarea);
+                    } else {
+                        console.log('❌ Textarea NO encontrado:', textareaName);
+                    }
+                }, 100);
             } else {
                 optionsContainer.innerHTML = '';
                 console.log('Opciones limpiadas para tipo:', fieldType);
