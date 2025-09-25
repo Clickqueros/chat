@@ -185,7 +185,7 @@
         
         console.log('WAC Frontend - Mostrando opciones con animación');
         
-        let optionsHTML = '<div class="wac-options" style="margin-bottom: 15px;">';
+        let optionsHTML = '<div class="wac-options animate-in" style="margin-bottom: 15px;">';
         
         options.forEach((option, index) => {
             console.log(`WAC Frontend - Opción ${index}:`, option);
