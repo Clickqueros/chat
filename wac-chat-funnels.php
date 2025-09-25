@@ -54,7 +54,6 @@ class WAC_Chat_Funnels_Simple {
         $enabled = get_post_meta($post->ID, '_wac_enabled', true);
         $teaser_text = get_post_meta($post->ID, '_wac_teaser_text', true);
         $teaser_delay = get_post_meta($post->ID, '_wac_teaser_delay', true);
-        $whatsapp_number = get_post_meta($post->ID, '_wac_whatsapp_number', true);
         ?>
         
         <style>
@@ -245,13 +244,6 @@ class WAC_Chat_Funnels_Simple {
                 <td>
                     <input type="number" name="wac_teaser_delay" value="<?php echo esc_attr($teaser_delay); ?>" min="1000" max="10000" step="1000" />
                     <p class="description"><?php _e('Tiempo antes de mostrar el teaser', 'wac-chat-funnels'); ?></p>
-                </td>
-            </tr>
-            <tr>
-                <th scope="row"><?php _e('Número de WhatsApp', 'wac-chat-funnels'); ?></th>
-                <td>
-                    <input type="text" name="wac_whatsapp_number" value="<?php echo esc_attr($whatsapp_number); ?>" class="regular-text" />
-                    <p class="description"><?php _e('Número completo con código de país (ej: +573154543344)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
         </table>
@@ -1022,9 +1014,6 @@ class WAC_Chat_Funnels_Simple {
             update_post_meta($post_id, '_wac_teaser_delay', intval($_POST['wac_teaser_delay']));
         }
         
-        if (isset($_POST['wac_whatsapp_number'])) {
-            update_post_meta($post_id, '_wac_whatsapp_number', sanitize_text_field($_POST['wac_whatsapp_number']));
-        }
         
         // Guardar pasos del funnel
         if (isset($_POST['wac_funnel_steps'])) {
@@ -1075,7 +1064,6 @@ class WAC_Chat_Funnels_Simple {
         $steps_data = get_post_meta($funnel_post->ID, '_wac_funnel_steps_data', true);
         $teaser_text = get_post_meta($funnel_post->ID, '_wac_teaser_text', true);
         $teaser_delay = get_post_meta($funnel_post->ID, '_wac_teaser_delay', true);
-        $whatsapp_number = get_post_meta($funnel_post->ID, '_wac_whatsapp_number', true);
         
         // Debug: Log de datos
         error_log('WAC Debug - steps_data: ' . print_r($steps_data, true));
@@ -1133,7 +1121,7 @@ class WAC_Chat_Funnels_Simple {
                 'text' => $teaser_text ?: '¿Necesitas ayuda?',
                 'delay' => $teaser_delay ?: 3000
             ),
-            'whatsapp' => $whatsapp_number ?: '+573142400850'
+            'whatsapp' => '+573142400850'
         );
     }
     
