@@ -618,22 +618,41 @@ class WAC_Chat_Funnels_Simple {
         $teaser_delay = get_post_meta($funnel_post->ID, '_wac_teaser_delay', true);
         $whatsapp_number = get_post_meta($funnel_post->ID, '_wac_whatsapp_number', true);
         
+        // Debug: Log de datos
+        error_log('WAC Debug - steps_data: ' . print_r($steps_data, true));
+        
         // Convertir datos de pasos al formato esperado por el frontend
         $steps = array();
         if ($steps_data && is_array($steps_data)) {
+            // Agrupar por step_id
+            $step_groups = array();
             foreach ($steps_data as $key => $value) {
                 if (strpos($key, '_message') !== false) {
                     $step_id = str_replace('_message', '', $key);
-                    $next_key = $step_id . '_next';
-                    
-                    $steps[] = array(
+                    $step_groups[$step_id] = array(
                         'id' => $step_id,
-                        'message' => $value,
-                        'next' => isset($steps_data[$next_key]) ? $steps_data[$next_key] : 'end'
+                        'message' => $value
                     );
+                } elseif (strpos($key, '_next') !== false) {
+                    $step_id = str_replace('_next', '', $key);
+                    if (!isset($step_groups[$step_id])) {
+                        $step_groups[$step_id] = array('id' => $step_id);
+                    }
+                    $step_groups[$step_id]['next'] = $value;
                 }
             }
+            
+            // Convertir a array indexado y ordenar por orden de creación
+            foreach ($step_groups as $step) {
+                $steps[] = array(
+                    'id' => $step['id'],
+                    'message' => $step['message'] ?? 'Sin mensaje',
+                    'next' => $step['next'] ?? 'end'
+                );
+            }
         }
+        
+        error_log('WAC Debug - steps procesados: ' . print_r($steps, true));
         
         return array(
             'steps' => $steps,

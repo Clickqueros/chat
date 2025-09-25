@@ -53,6 +53,9 @@
         const widgetContent = chatWidget.querySelector('.wac-widget-content');
         if (!widgetContent) return;
         
+        console.log('WAC Frontend - Mostrando paso:', currentStep, 'de', funnelSteps.length);
+        console.log('WAC Frontend - Datos del paso:', funnelSteps[currentStep]);
+        
         if (funnelSteps.length === 0) {
             // Si no hay configuración, mostrar mensaje
             widgetContent.innerHTML = `
@@ -85,23 +88,25 @@
             </div>
         `;
         
-        // Mostrar opciones si las hay
+        // Determinar qué botón mostrar
         if (step.next === 'whatsapp') {
             stepHTML += `
                 <button class="wac-button" onclick="handleWhatsApp()" style="width: 100%; padding: 10px; background: #25D366; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
                     📱 Ir a WhatsApp
                 </button>
             `;
-        } else if (step.next === 'end') {
+        } else if (step.next === 'end' && currentStep === funnelSteps.length - 1) {
+            // Solo mostrar "Finalizar" si es el último paso
             stepHTML += `
-                <button class="wac-button" onclick="nextStep()" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                    ✅ Finalizar
+                <button class="wac-button" onclick="finishChat()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
+                    ✅ Finalizar Chat
                 </button>
             `;
         } else {
+            // Mostrar "Continuar" para ir al siguiente paso
             stepHTML += `
                 <button class="wac-button" onclick="nextStep()" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                    ➡️ Continuar
+                    ➡️ Continuar (${currentStep + 1}/${funnelSteps.length})
                 </button>
             `;
         }
@@ -111,7 +116,13 @@
     
     function nextStep() {
         currentStep++;
+        console.log('WAC Frontend - Pasando al siguiente paso:', currentStep);
         showCurrentStep();
+    }
+    
+    function finishChat() {
+        console.log('WAC Frontend - Finalizando chat');
+        showCurrentStep(); // Esto mostrará el mensaje de finalización
     }
     
     function handleWhatsApp() {
@@ -138,6 +149,7 @@
         toggle: toggleChat,
         isOpen: () => isOpen,
         nextStep: nextStep,
+        finishChat: finishChat,
         handleWhatsApp: handleWhatsApp
     };
     
