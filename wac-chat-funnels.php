@@ -797,6 +797,13 @@ class WAC_Chat_Funnels_Simple {
                             console.log('Todos los textareas encontrados:', step.querySelectorAll('textarea'));
                             console.log('Textareas con patrón específico:', fieldOptions);
                             
+                            // Debug adicional: mostrar todos los nombres de textareas
+                            const allTextareas = step.querySelectorAll('textarea');
+                            console.log('=== NOMBRES DE TODOS LOS TEXTAREAS ===');
+                            allTextareas.forEach((textarea, index) => {
+                                console.log(`Textarea ${index}:`, textarea.name, 'Valor:', textarea.value);
+                            });
+                            
                             console.log('=== DEBUG FORMULARIO ===');
                             console.log('formOptionId:', formOptionId);
                             console.log('fieldLabels encontrados:', fieldLabels.length);
@@ -953,6 +960,13 @@ class WAC_Chat_Funnels_Simple {
                             console.log('Buscando campos con patrón:', `form_${formOptionId}_field_`);
                             console.log('Todos los textareas encontrados:', step.querySelectorAll('textarea'));
                             console.log('Textareas con patrón específico:', fieldOptions);
+                            
+                            // Debug adicional: mostrar todos los nombres de textareas
+                            const allTextareas = step.querySelectorAll('textarea');
+                            console.log('=== NOMBRES DE TODOS LOS TEXTAREAS ===');
+                            allTextareas.forEach((textarea, index) => {
+                                console.log(`Textarea ${index}:`, textarea.name, 'Valor:', textarea.value);
+                            });
                             
                             console.log('=== DEBUG FORMULARIO ===');
                             console.log('formOptionId:', formOptionId);
@@ -1430,7 +1444,18 @@ class WAC_Chat_Funnels_Simple {
         // Guardar pasos del funnel
         if (isset($_POST['wac_funnel_steps'])) {
             $steps_data = json_decode(stripslashes($_POST['wac_funnel_steps']), true);
+            
+            // Debug: loggear los datos que se están guardando
+            error_log('=== WAC DEBUG SAVE ===');
+            error_log('Post ID: ' . $post_id);
+            error_log('Datos recibidos: ' . print_r($_POST['wac_funnel_steps'], true));
+            error_log('Datos decodificados: ' . print_r($steps_data, true));
+            
             update_post_meta($post_id, '_wac_funnel_steps_data', $steps_data);
+            
+            // Verificar que se guardó correctamente
+            $saved_data = get_post_meta($post_id, '_wac_funnel_steps_data', true);
+            error_log('Datos guardados verificados: ' . print_r($saved_data, true));
         }
     }
     
