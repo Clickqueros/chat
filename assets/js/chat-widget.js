@@ -124,7 +124,7 @@
         
         // Mostrar mensaje del paso
         stepHTML += `
-            <div class="wac-message" style="margin-bottom: 15px; padding: 10px; background: #f0f0f0; border-radius: 10px;">
+            <div class="wac-message">
                 ${step.message || 'Mensaje del paso'}
             </div>
         `;
@@ -138,12 +138,11 @@
             step.options.forEach((option, index) => {
                 const targetStep = option.target - 1; // Convertir a índice base 0
                 console.log(`WAC Frontend - Opción ${index}:`, option.text, '-> paso', targetStep);
-                stepHTML += `
-                    <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}" 
-                         style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
-                        ${option.text}
-                    </div>
-                `;
+            stepHTML += `
+                <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}">
+                    ${option.text}
+                </div>
+            `;
             });
             
             stepHTML += '</div>';
@@ -152,8 +151,8 @@
             // Si no hay opciones, NO mostrar botón automático
             // El usuario debe configurar opciones para navegar
             stepHTML += `
-                <div style="padding: 15px; background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; margin-top: 10px; text-align: center; color: #856404;">
-                    <strong>⚠️ Sin opciones configuradas</strong><br>
+                <div class="wac-warning">
+                    <strong>⚠️ Sin opciones configuradas</strong>
                     <small>Este paso no tiene opciones. Configura opciones en el editor para permitir la navegación.</small>
                 </div>
             `;

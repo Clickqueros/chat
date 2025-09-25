@@ -1,94 +1,246 @@
 /**
- * WAC Chat Funnels - Widget CSS
- * Estilos para el widget de chat
+ * WAC Chat Funnels - Estilo JoinChat
+ * Diseño inspirado en JoinChat para máxima profesionalidad
  */
 
-/* Widget de chat básico */
+/* Widget principal */
 #wac-chat-widget {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 300px;
-    height: 400px;
+    width: 380px;
+    max-height: 600px;
     background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 9999;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    z-index: 999999;
     display: none;
+    overflow: hidden;
 }
 
 #wac-chat-widget.wac-open {
     display: block;
 }
 
+/* Header naranja estilo JoinChat */
 .wac-widget-header {
-    background: #007cba;
+    background: #ff6b35;
     color: white;
-    padding: 15px;
-    border-radius: 8px 8px 0 0;
+    padding: 15px 20px;
+    border-radius: 20px 20px 0 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .wac-widget-title {
-    font-weight: bold;
     margin: 0;
+    font-size: 16px;
+    font-weight: 600;
 }
 
 .wac-widget-close {
-    background: none;
+    background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
     cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
 }
 
+.wac-widget-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Contenido del chat */
 .wac-widget-content {
-    height: calc(100% - 60px);
+    padding: 20px;
+    background: #fafafa;
+    min-height: 200px;
+    max-height: 400px;
     overflow-y: auto;
-    padding: 15px;
 }
 
-/* Botón flotante para abrir chat */
+/* Burbujas de mensaje */
+.wac-message {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-width: 85%;
+    word-wrap: break-word;
+}
+
+/* Burbuja del bot (izquierda) */
+.wac-message {
+    margin-right: auto;
+}
+
+.wac-message::before {
+    content: '';
+    position: absolute;
+    left: -8px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 8px 8px 8px 0;
+    border-color: transparent white transparent transparent;
+}
+
+/* Opciones estilo JoinChat */
+.wac-options {
+    margin-top: 15px;
+}
+
+.wac-option {
+    background: white;
+    border: 2px solid #ff6b35;
+    color: #333;
+    padding: 12px 16px;
+    border-radius: 25px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-weight: 500;
+}
+
+.wac-option:hover {
+    background: #ff6b35;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.wac-option:active {
+    transform: translateY(0);
+}
+
+/* Botón toggle flotante */
 #wac-chat-toggle {
     position: fixed;
     bottom: 20px;
     right: 20px;
     width: 60px;
     height: 60px;
-    background: #007cba;
-    color: white;
+    background: #ff6b35;
     border: none;
     border-radius: 50%;
+    color: white;
     font-size: 24px;
     cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 9998;
+    box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
     transition: all 0.3s ease;
+    z-index: 999998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #wac-chat-toggle:hover {
-    background: #005a87;
     transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(255, 107, 53, 0.5);
+}
+
+/* Mensaje de advertencia */
+.wac-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    text-align: center;
+    color: #856404;
+    font-size: 13px;
+}
+
+.wac-warning strong {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+/* Scroll personalizado */
+.wac-widget-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wac-widget-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.wac-widget-content::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+}
+
+.wac-widget-content::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Animaciones */
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+#wac-chat-widget {
+    animation: slideInUp 0.3s ease-out;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 480px) {
     #wac-chat-widget {
         width: calc(100vw - 40px);
-        height: calc(100vh - 40px);
-        bottom: 20px;
         right: 20px;
         left: 20px;
     }
     
     #wac-chat-toggle {
-        bottom: 20px;
         right: 20px;
     }
+}
+
+/* Estados de carga */
+.wac-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #666;
+}
+
+.wac-loading::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ff6b35;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
