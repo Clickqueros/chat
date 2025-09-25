@@ -321,43 +321,49 @@ class WAC_Chat_Funnels_Simple {
             <tr>
                 <th scope="row"><?php _e('Color del Header', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_header_color" name="wac_header_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_color', true) ?: '#ff6b35'); ?>" />
-                    <p class="description"><?php _e('Color de fondo del encabezado del chat', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_header_color" name="wac_header_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_color', true) ?: '#ff6b35'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_header_color_hex" name="wac_header_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_color', true) ?: '#ff6b35'); ?>" placeholder="#ff6b35" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color de fondo del encabezado del chat (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Color del Texto del Header', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_header_text_color" name="wac_header_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_text_color', true) ?: '#ffffff'); ?>" />
-                    <p class="description"><?php _e('Color del texto en el encabezado', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_header_text_color" name="wac_header_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_text_color', true) ?: '#ffffff'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_header_text_color_hex" name="wac_header_text_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_text_color', true) ?: '#ffffff'); ?>" placeholder="#ffffff" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color del texto en el encabezado (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Color de Fondo de Botones', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_button_bg_color" name="wac_button_bg_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_bg_color', true) ?: '#ff6b35'); ?>" />
-                    <p class="description"><?php _e('Color de fondo de los botones de opciones', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_button_bg_color" name="wac_button_bg_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_bg_color', true) ?: '#ff6b35'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_button_bg_color_hex" name="wac_button_bg_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_bg_color', true) ?: '#ff6b35'); ?>" placeholder="#ff6b35" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color de fondo de los botones de opciones (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Color del Texto de Botones', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_button_text_color" name="wac_button_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_text_color', true) ?: '#ffffff'); ?>" />
-                    <p class="description"><?php _e('Color del texto en los botones', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_button_text_color" name="wac_button_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_text_color', true) ?: '#ffffff'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_button_text_color_hex" name="wac_button_text_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_text_color', true) ?: '#ffffff'); ?>" placeholder="#ffffff" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color del texto en los botones (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Color de Borde de Botones', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_button_border_color" name="wac_button_border_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_border_color', true) ?: '#ff6b35'); ?>" />
-                    <p class="description"><?php _e('Color del borde de los botones', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_button_border_color" name="wac_button_border_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_border_color', true) ?: '#ff6b35'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_button_border_color_hex" name="wac_button_border_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_border_color', true) ?: '#ff6b35'); ?>" placeholder="#ff6b35" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color del borde de los botones (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
                 <th scope="row"><?php _e('Color del Botón Principal', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_toggle_color" name="wac_toggle_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_toggle_color', true) ?: '#ff6b35'); ?>" />
-                    <p class="description"><?php _e('Color del botón flotante para abrir el chat', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_toggle_color" name="wac_toggle_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_toggle_color', true) ?: '#ff6b35'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_toggle_color_hex" name="wac_toggle_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_toggle_color', true) ?: '#ff6b35'); ?>" placeholder="#ff6b35" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color del botón flotante para abrir el chat (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
             <tr>
@@ -370,8 +376,9 @@ class WAC_Chat_Funnels_Simple {
             <tr>
                 <th scope="row"><?php _e('Color del Título del Chat', 'wac-chat-funnels'); ?></th>
                 <td>
-                    <input type="color" id="wac_chat_title_color" name="wac_chat_title_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_chat_title_color', true) ?: '#ffffff'); ?>" />
-                    <p class="description"><?php _e('Color del texto del título en el encabezado', 'wac-chat-funnels'); ?></p>
+                    <input type="color" id="wac_chat_title_color" name="wac_chat_title_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_chat_title_color', true) ?: '#ffffff'); ?>" style="margin-right: 10px;" />
+                    <input type="text" id="wac_chat_title_color_hex" name="wac_chat_title_color_hex" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_chat_title_color', true) ?: '#ffffff'); ?>" placeholder="#ffffff" style="width: 100px; font-family: monospace;" />
+                    <p class="description"><?php _e('Color del texto del título en el encabezado (formato hexadecimal)', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
         </table>
@@ -1635,6 +1642,68 @@ class WAC_Chat_Funnels_Simple {
                 console.log('TEXTAREA INPUT DETECTADO:', event.target.name, 'Valor:', event.target.value);
             }
         });
+        
+        // Sincronizar campos de color con campos hexadecimales
+        function setupColorSync() {
+            const colorFields = [
+                'wac_header_color',
+                'wac_header_text_color', 
+                'wac_button_bg_color',
+                'wac_button_text_color',
+                'wac_button_border_color',
+                'wac_toggle_color',
+                'wac_chat_title_color'
+            ];
+            
+            colorFields.forEach(function(fieldId) {
+                const colorInput = document.getElementById(fieldId);
+                const hexInput = document.getElementById(fieldId + '_hex');
+                
+                if (colorInput && hexInput) {
+                    // Sincronizar de color picker a hexadecimal
+                    colorInput.addEventListener('input', function() {
+                        hexInput.value = this.value;
+                    });
+                    
+                    // Sincronizar de hexadecimal a color picker
+                    hexInput.addEventListener('input', function() {
+                        let value = this.value;
+                        
+                        // Validar formato hexadecimal
+                        if (value && !value.startsWith('#')) {
+                            value = '#' + value;
+                        }
+                        
+                        // Validar que sea un color hexadecimal válido
+                        if (/^#[0-9A-F]{6}$/i.test(value)) {
+                            colorInput.value = value;
+                            this.style.borderColor = '#ddd'; // Reset border color
+                        } else if (value && value !== '#') {
+                            this.style.borderColor = '#ff6b35'; // Error color
+                        }
+                        
+                        // Actualizar el valor en el campo hex
+                        this.value = value;
+                    });
+                    
+                    // Validar al perder el foco
+                    hexInput.addEventListener('blur', function() {
+                        let value = this.value;
+                        if (value && !value.startsWith('#')) {
+                            value = '#' + value;
+                        }
+                        if (!value || value === '#') {
+                            value = colorInput.value; // Restaurar valor del color picker
+                        }
+                        this.value = value;
+                        this.style.borderColor = '#ddd';
+                    });
+                }
+            });
+        }
+        
+        // Inicializar sincronización de colores
+        setupColorSync();
         
         // Manejar cambios en el tipo de targeting
         document.addEventListener('change', function(event) {
