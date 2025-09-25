@@ -139,10 +139,10 @@
                 const targetStep = option.target - 1; // Convertir a índice base 0
                 console.log(`WAC Frontend - Opción ${index}:`, option.text, '-> paso', targetStep);
                 stepHTML += `
-                    <button class="wac-option-button" data-target-step="${targetStep}" 
-                            style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
+                    <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}" 
+                         style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
                         ${option.text}
-                    </button>
+                    </div>
                 `;
             });
             
@@ -183,15 +183,15 @@
         console.log('WAC Frontend - Agregando event listeners...');
         console.log('WAC Frontend - HTML del widget:', widgetContent.innerHTML);
         
-        // Event listeners para botones de opciones
-        const optionButtons = widgetContent.querySelectorAll('.wac-option-button');
-        console.log('WAC Frontend - Botones de opciones encontrados:', optionButtons.length);
+        // Event listeners para opciones (estilo JoinChat)
+        const options = widgetContent.querySelectorAll('.wac-option');
+        console.log('WAC Frontend - Opciones encontradas:', options.length);
         
-        optionButtons.forEach((button, index) => {
-            console.log(`WAC Frontend - Botón ${index}:`, button);
-            button.addEventListener('click', function() {
-                const targetStep = parseInt(this.getAttribute('data-target-step'));
-                console.log('WAC Frontend - Botón de opción clickeado, target step:', targetStep);
+        options.forEach((option, index) => {
+            console.log(`WAC Frontend - Opción ${index}:`, option);
+            option.addEventListener('click', function() {
+                const targetStep = parseInt(this.getAttribute('data-option'));
+                console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
                 goToStep(targetStep);
             });
         });

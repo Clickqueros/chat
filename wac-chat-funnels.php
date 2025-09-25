@@ -743,7 +743,7 @@ class WAC_Chat_Funnels_Simple {
         
         // Encolar CSS y JS del widget
         wp_enqueue_style('wac-chat-widget', plugin_dir_url(__FILE__) . 'assets/css/chat-widget.css', array(), '1.0.0');
-        wp_enqueue_script('wac-chat-widget', plugin_dir_url(__FILE__) . 'assets/js/chat-widget.js', array(), '1.0.0', true);
+        wp_enqueue_script('wac-chat-widget', plugin_dir_url(__FILE__) . 'assets/js/chat-widget.js', array(), time(), true);
         
         // Pasar datos del funnel al JavaScript
         $funnel_data = $this->prepare_funnel_data($active_funnel);
