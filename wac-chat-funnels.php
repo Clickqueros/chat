@@ -19,7 +19,6 @@ class WAC_Chat_Funnels_Simple {
         add_action('save_post', array($this, 'save_metaboxes'));
         add_action('wp_enqueue_scripts', array($this, 'enqueue_scripts'));
         add_action('wp_ajax_wac_debug_database', array($this, 'ajax_debug_database'));
-        add_shortcode('wac_funnel', array($this, 'shortcode_handler'));
     }
     
     public function init() {
@@ -304,7 +303,6 @@ class WAC_Chat_Funnels_Simple {
                         <option value="all" <?php selected(get_post_meta($post->ID, '_wac_targeting_type', true), 'all'); ?>>Todas las páginas</option>
                         <option value="homepage" <?php selected(get_post_meta($post->ID, '_wac_targeting_type', true), 'homepage'); ?>>Solo página de inicio</option>
                         <option value="specific_pages" <?php selected(get_post_meta($post->ID, '_wac_targeting_type', true), 'specific_pages'); ?>>Páginas específicas</option>
-                        <option value="shortcode" <?php selected(get_post_meta($post->ID, '_wac_targeting_type', true), 'shortcode'); ?>>Solo por shortcode</option>
                     </select>
                     <p class="description"><?php _e('Selecciona dónde quieres que aparezca el funnel', 'wac-chat-funnels'); ?></p>
                 </td>
@@ -314,13 +312,6 @@ class WAC_Chat_Funnels_Simple {
                 <td>
                     <input type="text" id="wac_target_pages" name="wac_target_pages" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_target_pages', true)); ?>" placeholder="Ej: 1,5,10" style="width: 100%;" />
                     <p class="description"><?php _e('Ingresa los IDs de las páginas donde quieres mostrar el funnel, separados por comas', 'wac-chat-funnels'); ?></p>
-                </td>
-            </tr>
-            <tr id="wac_shortcode_info" style="<?php echo get_post_meta($post->ID, '_wac_targeting_type', true) === 'shortcode' ? '' : 'display: none;'; ?>">
-                <th scope="row"><?php _e('Shortcode', 'wac-chat-funnels'); ?></th>
-                <td>
-                    <input type="text" value="[wac_funnel id=&quot;<?php echo $post->ID; ?>&quot;]" readonly style="width: 100%; background: #f0f0f0; padding: 8px; border-radius: 4px; font-family: monospace;" />
-                    <p class="description"><?php _e('Copia este shortcode y pégalo en cualquier página donde quieras mostrar el funnel', 'wac-chat-funnels'); ?></p>
                 </td>
             </tr>
         </table>
@@ -1590,17 +1581,13 @@ class WAC_Chat_Funnels_Simple {
             if (event.target.id === 'wac_targeting_type') {
                 const targetingType = event.target.value;
                 const specificPagesConfig = document.getElementById('wac_specific_pages_config');
-                const shortcodeInfo = document.getElementById('wac_shortcode_info');
                 
                 // Ocultar todas las opciones
                 if (specificPagesConfig) specificPagesConfig.style.display = 'none';
-                if (shortcodeInfo) shortcodeInfo.style.display = 'none';
                 
                 // Mostrar la opción correspondiente
                 if (targetingType === 'specific_pages' && specificPagesConfig) {
                     specificPagesConfig.style.display = '';
-                } else if (targetingType === 'shortcode' && shortcodeInfo) {
-                    shortcodeInfo.style.display = '';
                 }
             }
         });
@@ -1865,94 +1852,11 @@ class WAC_Chat_Funnels_Simple {
                 $page_ids = array_map('intval', explode(',', $target_pages));
                 return in_array(get_the_ID(), $page_ids);
                 
-            case 'shortcode':
-                // Solo se muestra por shortcode, no automáticamente
-                return false;
-                
             default:
                 return true;
         }
     }
     
-    public function shortcode_handler($atts) {
-        $atts = shortcode_atts(array(
-            'id' => 0,
-        ), $atts);
-        
-        if (empty($atts['id'])) {
-            return '<!-- WAC Funnel: ID no especificado -->';
-        }
-        
-        $funnel_id = intval($atts['id']);
-        $funnel_post = get_post($funnel_id);
-        
-        if (!$funnel_post || $funnel_post->post_type !== 'wac_chat_funnel') {
-            return '<!-- WAC Funnel: Funnel no encontrado -->';
-        }
-        
-        // Verificar que el funnel esté habilitado
-        $enabled = get_post_meta($funnel_id, '_wac_enabled', true);
-        if (!$enabled) {
-            return '<!-- WAC Funnel: Funnel deshabilitado -->';
-        }
-        
-        // Generar el widget HTML
-        ob_start();
-        $this->render_specific_funnel_widget($funnel_post);
-        return ob_get_clean();
-    }
-    
-    private function render_specific_funnel_widget($funnel_post) {
-        $steps_data = get_post_meta($funnel_post->ID, '_wac_funnel_steps_data', true);
-        $teaser_text = get_post_meta($funnel_post->ID, '_wac_teaser_text', true) ?: '¿Necesitas ayuda?';
-        $teaser_delay = get_post_meta($funnel_post->ID, '_wac_teaser_delay', true) ?: 3000;
-        
-        if (!$steps_data || empty($steps_data)) {
-            return;
-        }
-        
-        // Preparar datos del funnel
-        $funnel_data = $this->prepare_funnel_data($funnel_post);
-        ?>
-        
-        <script type="text/javascript">
-        window.wacFunnelData_<?php echo $funnel_post->ID; ?> = <?php echo json_encode($funnel_data); ?>;
-        window.wacTeaserText_<?php echo $funnel_post->ID; ?> = <?php echo json_encode($teaser_text); ?>;
-        window.wacTeaserDelay_<?php echo $funnel_post->ID; ?> = <?php echo $teaser_delay; ?>;
-        </script>
-        
-        <!-- WAC Chat Widget para Funnel <?php echo $funnel_post->ID; ?> -->
-        <div id="wac-chat-widget-<?php echo $funnel_post->ID; ?>" class="wac-chat-widget">
-            <div class="wac-chat-toggle">
-                <span class="wac-chat-icon">💬</span>
-            </div>
-            <div class="wac-chat-container">
-                <div class="wac-chat-header">
-                    <div class="wac-chat-title"><?php echo esc_html($funnel_post->post_title); ?></div>
-                    <button class="wac-chat-close">×</button>
-                </div>
-                <div class="wac-chat-content">
-                    <div class="wac-chat-messages"></div>
-                </div>
-            </div>
-        </div>
-        
-        <script type="text/javascript">
-        (function() {
-            const funnelId = <?php echo $funnel_post->ID; ?>;
-            const funnelData = window.wacFunnelData_<?php echo $funnel_post->ID; ?>;
-            const teaserText = window.wacTeaserText_<?php echo $funnel_post->ID; ?>;
-            const teaserDelay = window.wacTeaserDelay_<?php echo $funnel_post->ID; ?>;
-            
-            // Inicializar el widget específico
-            if (typeof window.WACChat !== 'undefined') {
-                window.WACChat.initSpecificWidget(funnelId, funnelData, teaserText, teaserDelay);
-            }
-        })();
-        </script>
-        
-        <?php
-    }
 }
 
 // Inicializar el plugin
