@@ -657,6 +657,12 @@ class WAC_Chat_Funnels_Simple {
                     <label>Opciones (una por línea):</label>
                     <textarea name="${textareaName}" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
                 `;
+                
+                // Agregar evento para detectar cuando se escribe en el textarea
+                const textarea = optionsContainer.querySelector('textarea');
+                textarea.addEventListener('input', function() {
+                    console.log('TEXTAREA INPUT DETECTADO:', this.name, 'Valor:', this.value);
+                });
                 console.log('Textarea de opciones creado para select con name:', textareaName);
                 
                 // Verificar que el textarea se creó correctamente
@@ -831,11 +837,17 @@ class WAC_Chat_Funnels_Simple {
                                         console.log('Valor del textarea:', optionsText);
                                         console.log('Longitud del valor:', optionsText.length);
                                         
+                                        // Debug adicional: verificar si el textarea está visible y tiene foco
+                                        console.log('Textarea visible:', fieldOptions[fieldIndex].offsetParent !== null);
+                                        console.log('Textarea tiene foco:', document.activeElement === fieldOptions[fieldIndex]);
+                                        console.log('Textarea innerHTML:', fieldOptions[fieldIndex].innerHTML);
+                                        
                                         if (optionsText) {
                                             field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
                                             console.log('Opciones procesadas:', field.options);
                                         } else {
                                             console.log('Textarea vacío, no se agregan opciones');
+                                            console.log('PROBLEMA: El textarea está vacío cuando debería tener contenido');
                                         }
                                     } else {
                                         console.log('No es select o no hay textarea:', field.type, !!fieldOptions[fieldIndex]);
@@ -995,11 +1007,17 @@ class WAC_Chat_Funnels_Simple {
                                         console.log('Valor del textarea:', optionsText);
                                         console.log('Longitud del valor:', optionsText.length);
                                         
+                                        // Debug adicional: verificar si el textarea está visible y tiene foco
+                                        console.log('Textarea visible:', fieldOptions[fieldIndex].offsetParent !== null);
+                                        console.log('Textarea tiene foco:', document.activeElement === fieldOptions[fieldIndex]);
+                                        console.log('Textarea innerHTML:', fieldOptions[fieldIndex].innerHTML);
+                                        
                                         if (optionsText) {
                                             field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
                                             console.log('Opciones procesadas:', field.options);
                                         } else {
                                             console.log('Textarea vacío, no se agregan opciones');
+                                            console.log('PROBLEMA: El textarea está vacío cuando debería tener contenido');
                                         }
                                     } else {
                                         console.log('No es select o no hay textarea:', field.type, !!fieldOptions[fieldIndex]);
