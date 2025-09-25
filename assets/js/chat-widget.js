@@ -215,8 +215,11 @@
         // Insertar opciones
         widgetContent.insertAdjacentHTML('beforeend', optionsHTML);
         
-        // Agregar event listeners después de insertar las opciones
-        addEventListeners();
+        // Pequeña demora para que se vea la animación
+        setTimeout(() => {
+            // Agregar event listeners después de insertar las opciones
+            addEventListeners();
+        }, 100);
     }
     
     function addEventListeners() {

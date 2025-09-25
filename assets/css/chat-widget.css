@@ -311,9 +311,9 @@
 
 /* Animación suave para las opciones (solo cuando se agregan dinámicamente) */
 .wac-options.animate-in {
-    opacity: 0 !important;
-    transform: translateY(10px) !important;
-    animation: fadeInUp 0.5s ease-out forwards !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    animation: fadeInUp 0.5s ease-out !important;
 }
 
 @keyframes fadeInUp {
@@ -329,9 +329,9 @@
 
 /* Animación individual para cada opción (solo cuando se agregan dinámicamente) */
 .wac-options.animate-in .wac-option {
-    opacity: 0 !important;
-    transform: translateY(15px) !important;
-    animation: slideInOption 0.4s ease-out forwards !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    animation: slideInOption 0.4s ease-out !important;
 }
 
 .wac-options.animate-in .wac-option:nth-child(1) { animation-delay: 0.1s !important; }
