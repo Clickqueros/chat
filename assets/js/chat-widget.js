@@ -206,6 +206,14 @@
                         📱 ${option.text}
                     </div>
                 `;
+            } else if (option.type === 'form') {
+                // Opción de formulario
+                console.log(`WAC Frontend - Formulario:`, option.text, '-> contacto:', option.contact);
+                optionsHTML += `
+                    <div class="wac-option wac-form-option" role="button" tabindex="0" data-form='${JSON.stringify(option)}'>
+                        📝 ${option.text}
+                    </div>
+                `;
             } else {
                 // Opción normal de paso
                 const targetStep = option.target - 1; // Convertir a índice base 0
@@ -259,10 +267,17 @@
                         console.log('WAC Frontend - WhatsApp clickeado, contacto:', contactIndex);
                         handleWhatsAppContact(parseInt(contactIndex));
                     } else {
-                        // Opción normal de paso
-                        const targetStep = parseInt(this.getAttribute('data-option'));
-                        console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
-                        goToStep(targetStep);
+                        // Verificar si es una opción de formulario
+                        const formData = this.getAttribute('data-form');
+                        if (formData) {
+                            console.log('WAC Frontend - Formulario clickeado, datos:', formData);
+                            showForm(JSON.parse(formData));
+                        } else {
+                            // Opción normal de paso
+                            const targetStep = parseInt(this.getAttribute('data-option'));
+                            console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
+                            goToStep(targetStep);
+                        }
                     }
                 }
             });
@@ -317,6 +332,183 @@
                 window.open(`https://wa.me/${phoneNumber.replace('+', '')}?text=${message}`, '_blank');
             } else {
                 console.error('WAC Frontend - Contacto WhatsApp no encontrado:', contactIndex);
+                alert('Error: Contacto de WhatsApp no encontrado');
+            }
+        } else {
+            console.error('WAC Frontend - Datos de contactos WhatsApp no disponibles');
+            alert('Error: Contactos de WhatsApp no configurados');
+        }
+    }
+    
+    function showForm(formOption) {
+        console.log('WAC Frontend - showForm llamado con:', formOption);
+        
+        const widgetContent = chatWidget.querySelector('.wac-widget-content');
+        if (!widgetContent) return;
+        
+        // Crear HTML del formulario
+        let formHTML = `
+            <div class="wac-form-container" style="margin-top: 15px;">
+                <div class="wac-form-header" style="background: #f8f9fa; padding: 10px; border-radius: 4px 4px 0 0; font-weight: bold;">
+                    📝 ${formOption.text}
+                </div>
+                <form id="wac-form" style="background: white; padding: 15px; border: 1px solid #ddd; border-radius: 0 0 4px 4px;">
+        `;
+        
+        // Agregar campos del formulario
+        if (formOption.fields && Array.isArray(formOption.fields)) {
+            formOption.fields.forEach((field, index) => {
+                const fieldId = `form_field_${index}`;
+                const isRequired = field.required ? 'required' : '';
+                const requiredMark = field.required ? ' *' : '';
+                
+                formHTML += `
+                    <div class="wac-form-field" style="margin-bottom: 15px;">
+                        <label for="${fieldId}" style="display: block; margin-bottom: 5px; font-weight: bold;">
+                            ${field.label}${requiredMark}
+                        </label>
+                `;
+                
+                if (field.type === 'textarea') {
+                    formHTML += `
+                        <textarea id="${fieldId}" name="${field.name || field.label}" ${isRequired} 
+                                  style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; min-height: 80px;"
+                                  placeholder="Ingresa tu ${field.label.toLowerCase()}"></textarea>
+                    `;
+                } else if (field.type === 'select') {
+                    formHTML += `
+                        <select id="${fieldId}" name="${field.name || field.label}" ${isRequired} 
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <option value="">Selecciona una opción</option>
+                    `;
+                    if (field.options && Array.isArray(field.options)) {
+                        field.options.forEach(option => {
+                            formHTML += `<option value="${option}">${option}</option>`;
+                        });
+                    }
+                    formHTML += `</select>`;
+                } else {
+                    const inputType = field.type === 'email' ? 'email' : 'text';
+                    formHTML += `
+                        <input type="${inputType}" id="${fieldId}" name="${field.name || field.label}" ${isRequired}
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                               placeholder="Ingresa tu ${field.label.toLowerCase()}">
+                    `;
+                }
+                
+                formHTML += `</div>`;
+            });
+        }
+        
+        // Botones del formulario
+        formHTML += `
+                    <div class="wac-form-buttons" style="margin-top: 20px; display: flex; gap: 10px;">
+                        <button type="button" class="wac-form-cancel" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white; cursor: pointer;">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="wac-form-submit" style="flex: 1; padding: 10px; border: none; border-radius: 4px; background: #25d366; color: white; cursor: pointer;">
+                            Enviar 📱
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        
+        // Reemplazar contenido del widget
+        widgetContent.innerHTML = formHTML;
+        
+        // Agregar event listeners del formulario
+        const form = document.getElementById('wac-form');
+        const cancelBtn = document.querySelector('.wac-form-cancel');
+        
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                handleFormSubmit(formOption);
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', function() {
+                // Volver al paso actual
+                showCurrentStep();
+            });
+        }
+    }
+    
+    function handleFormSubmit(formOption) {
+        console.log('WAC Frontend - handleFormSubmit llamado con:', formOption);
+        
+        const form = document.getElementById('wac-form');
+        if (!form) return;
+        
+        const formData = new FormData(form);
+        const data = {};
+        
+        // Recopilar datos del formulario
+        for (let [key, value] of formData.entries()) {
+            data[key] = value;
+        }
+        
+        // Validar campos obligatorios
+        let isValid = true;
+        const errors = [];
+        
+        if (formOption.fields && Array.isArray(formOption.fields)) {
+            formOption.fields.forEach(field => {
+                if (field.required) {
+                    const value = data[field.name || field.label];
+                    if (!value || value.trim() === '') {
+                        isValid = false;
+                        errors.push(`${field.label} es obligatorio`);
+                    }
+                }
+            });
+        }
+        
+        if (!isValid) {
+            alert('Por favor completa todos los campos obligatorios:\n' + errors.join('\n'));
+            return;
+        }
+        
+        // Crear mensaje para WhatsApp
+        let message = `*Nuevo formulario:* ${formOption.text}\n\n`;
+        
+        Object.keys(data).forEach(key => {
+            const value = data[key];
+            if (value && value.trim() !== '') {
+                message += `*${key}:* ${value}\n`;
+            }
+        });
+        
+        // Obtener número de WhatsApp
+        if (typeof wacFunnelData !== 'undefined' && wacFunnelData.whatsapp_contacts) {
+            const contacts = wacFunnelData.whatsapp_contacts;
+            const contactIndex = formOption.contact - 1;
+            
+            if (contacts && contacts[contactIndex]) {
+                const phoneNumber = contacts[contactIndex];
+                const encodedMessage = encodeURIComponent(message);
+                
+                console.log('WAC Frontend - Enviando formulario a WhatsApp:', phoneNumber);
+                console.log('WAC Frontend - Mensaje:', message);
+                
+                // Abrir WhatsApp con el mensaje
+                window.open(`https://wa.me/${phoneNumber.replace('+', '')}?text=${encodedMessage}`, '_blank');
+                
+                // Mostrar mensaje de confirmación
+                const widgetContent = chatWidget.querySelector('.wac-widget-content');
+                if (widgetContent) {
+                    widgetContent.innerHTML = `
+                        <div style="padding: 20px; text-align: center;">
+                            <h4>✅ Formulario enviado</h4>
+                            <p>¡Gracias! Hemos enviado tu información por WhatsApp.</p>
+                            <p>Te contactaremos pronto.</p>
+                        </div>
+                    `;
+                }
+            } else {
+                console.error('WAC Frontend - Contacto WhatsApp no encontrado:', formOption.contact);
                 alert('Error: Contacto de WhatsApp no encontrado');
             }
         } else {

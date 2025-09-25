@@ -345,6 +345,9 @@ class WAC_Chat_Funnels_Simple {
                             <button type="button" class="wac-add-option-btn" onclick="addWhatsAppContactOption('${stepId}')" style="background: #25d366; border-color: #25d366;">
                                 📱 Añadir contacto
                             </button>
+                            <button type="button" class="wac-add-option-btn" onclick="addFormOption('${stepId}')" style="background: #6f42c1; border-color: #6f42c1;">
+                                📝 Añadir formulario
+                            </button>
                         </div>
                     </div>
                     
@@ -438,6 +441,15 @@ class WAC_Chat_Funnels_Simple {
                 }
             }
             
+            // Buscar opción de formulario
+            if (!option) {
+                const formInput = document.querySelector(`input[name="${stepId}_form_text_${optionId}"]`);
+                if (formInput) {
+                    option = formInput.closest('.wac-option-item');
+                    console.log('Encontrada opción de formulario:', option);
+                }
+            }
+            
             if (option) {
                 console.log('Eliminando opción:', option);
                 option.remove();
@@ -522,6 +534,149 @@ class WAC_Chat_Funnels_Simple {
             optionsList.appendChild(optionDiv);
         }
         
+        // Función para agregar una opción de formulario a un paso
+        function addFormOption(stepId) {
+            const optionsList = document.getElementById(`options_${stepId}`);
+            const optionId = Date.now();
+            
+            // Obtener contactos disponibles
+            const contacts = document.querySelectorAll('input[name^="wac_whatsapp_contact_"]');
+            let contactOptions = '';
+            contacts.forEach((contact, index) => {
+                const contactNumber = contact.value.trim();
+                if (contactNumber) {
+                    contactOptions += `<option value="${index + 1}">WhatsApp ${index + 1} (${contactNumber})</option>`;
+                }
+            });
+            
+            if (!contactOptions) {
+                alert('Primero agrega contactos de WhatsApp en la configuración');
+                return;
+            }
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'wac-option-item wac-form-option';
+            optionDiv.innerHTML = `
+                <div class="wac-form-config">
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <strong>📝 Configuración del Formulario</strong>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <label>Texto del botón del formulario:</label>
+                        <input type="text" name="${stepId}_form_text_${optionId}" placeholder="Ej: Solicitar cotización" class="wac-option-text" style="width: 100%; margin-top: 5px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <label>Enviar datos a:</label>
+                        <select name="${stepId}_form_contact_${optionId}" class="wac-option-target" style="width: 100%; margin-top: 5px;">
+                            <option value="">Seleccionar contacto</option>
+                            ${contactOptions}
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <label>Campos del formulario:</label>
+                        <div id="form_fields_${optionId}" style="margin-top: 10px;">
+                            <!-- Los campos se agregarán aquí dinámicamente -->
+                        </div>
+                        <button type="button" class="button button-small" onclick="addFormField('${optionId}')" style="margin-top: 10px;">
+                            + Agregar campo
+                        </button>
+                    </div>
+                    
+                    <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                </div>
+            `;
+            
+            optionsList.appendChild(optionDiv);
+            
+            // Agregar un campo por defecto
+            addFormField(optionId);
+        }
+        
+        // Función para agregar un campo al formulario
+        function addFormField(formOptionId) {
+            const fieldsContainer = document.getElementById(`form_fields_${formOptionId}`);
+            const fieldId = Date.now();
+            const fieldCount = fieldsContainer.children.length + 1;
+            
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'wac-form-field';
+            fieldDiv.style.cssText = 'margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;';
+            fieldDiv.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <strong>Campo ${fieldCount}</strong>
+                    <button type="button" class="button button-small" onclick="removeFormField('${formOptionId}', '${fieldId}')">Eliminar</button>
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <label>Etiqueta del campo:</label>
+                    <input type="text" name="form_${formOptionId}_field_${fieldId}_label" placeholder="Ej: Nombre, Email, Teléfono" style="width: 100%; margin-top: 5px;">
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <label>Tipo de campo:</label>
+                    <select name="form_${formOptionId}_field_${fieldId}_type" style="width: 100%; margin-top: 5px;" onchange="handleFieldTypeChange('${formOptionId}', '${fieldId}', this.value)">
+                        <option value="text">Texto</option>
+                        <option value="email">Email</option>
+                        <option value="select">Lista desplegable</option>
+                        <option value="textarea">Texto largo</option>
+                    </select>
+                </div>
+                
+                <div id="field_options_${formOptionId}_${fieldId}" style="margin-bottom: 10px;">
+                    <!-- Opciones específicas del tipo de campo -->
+                </div>
+                
+                <div style="margin-bottom: 10px;">
+                    <label>
+                        <input type="checkbox" name="form_${formOptionId}_field_${fieldId}_required" value="1">
+                        Campo obligatorio
+                    </label>
+                </div>
+            `;
+            
+            fieldsContainer.appendChild(fieldDiv);
+            
+            // Inicializar opciones del campo
+            handleFieldTypeChange(formOptionId, fieldId, 'text');
+        }
+        
+        // Función para manejar el cambio de tipo de campo
+        function handleFieldTypeChange(formOptionId, fieldId, fieldType) {
+            const optionsContainer = document.getElementById(`field_options_${formOptionId}_${fieldId}`);
+            
+            if (fieldType === 'select') {
+                optionsContainer.innerHTML = `
+                    <label>Opciones (una por línea):</label>
+                    <textarea name="form_${formOptionId}_field_${fieldId}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
+                `;
+            } else {
+                optionsContainer.innerHTML = '';
+            }
+        }
+        
+        // Función para eliminar un campo del formulario
+        function removeFormField(formOptionId, fieldId) {
+            const field = document.querySelector(`input[name="form_${formOptionId}_field_${fieldId}_label"]`).closest('.wac-form-field');
+            if (field) {
+                field.remove();
+                updateFormFieldNumbers(formOptionId);
+            }
+        }
+        
+        // Función para actualizar los números de los campos del formulario
+        function updateFormFieldNumbers(formOptionId) {
+            const fields = document.querySelectorAll(`#form_fields_${formOptionId} .wac-form-field`);
+            fields.forEach((field, index) => {
+                const title = field.querySelector('strong');
+                if (title) {
+                    title.textContent = `Campo ${index + 1}`;
+                }
+            });
+        }
+        
         function updateStepNumbers() {
             const steps = document.querySelectorAll('.wac-step');
             steps.forEach((step, index) => {
@@ -559,13 +714,15 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso (normales, de enlace y de WhatsApp)
+                    // Recopilar opciones del paso (normales, de enlace, de WhatsApp y formularios)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
                     const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
                     const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
                     const whatsappTexts = step.querySelectorAll(`input[name^="${stepId}_whatsapp_text_"]`);
                     const whatsappContacts = step.querySelectorAll(`select[name^="${stepId}_whatsapp_contact_"]`);
+                    const formTexts = step.querySelectorAll(`input[name^="${stepId}_form_text_"]`);
+                    const formContacts = step.querySelectorAll(`select[name^="${stepId}_form_contact_"]`);
                     
                     const options = [];
                     
@@ -601,6 +758,47 @@ class WAC_Chat_Funnels_Simple {
                                 text: textInput.value.trim(),
                                 contact: parseInt(contactSelect.value),
                                 type: 'whatsapp'
+                            });
+                        }
+                    });
+                    
+                    // Agregar opciones de formulario
+                    formTexts.forEach((textInput, index) => {
+                        const contactSelect = formContacts[index];
+                        if (textInput.value.trim() && contactSelect.value.trim()) {
+                            // Recopilar campos del formulario
+                            const formOptionId = textInput.name.match(/form_text_(\d+)/)[1];
+                            const formFields = [];
+                            
+                            // Buscar todos los campos de este formulario
+                            const fieldLabels = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_label"]`);
+                            const fieldTypes = step.querySelectorAll(`select[name^="form_${formOptionId}_field_"][name$="_type"]`);
+                            const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
+                            const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
+                            
+                            fieldLabels.forEach((labelInput, fieldIndex) => {
+                                if (labelInput.value.trim()) {
+                                    const field = {
+                                        label: labelInput.value.trim(),
+                                        type: fieldTypes[fieldIndex] ? fieldTypes[fieldIndex].value : 'text',
+                                        required: fieldRequired[fieldIndex] ? fieldRequired[fieldIndex].checked : false
+                                    };
+                                    
+                                    // Si es un campo select, agregar las opciones
+                                    if (field.type === 'select' && fieldOptions[fieldIndex]) {
+                                        const optionsText = fieldOptions[fieldIndex].value.trim();
+                                        field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                    }
+                                    
+                                    formFields.push(field);
+                                }
+                            });
+                            
+                            options.push({
+                                text: textInput.value.trim(),
+                                contact: parseInt(contactSelect.value),
+                                type: 'form',
+                                fields: formFields
                             });
                         }
                     });
@@ -640,13 +838,15 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso (normales, de enlace y de WhatsApp)
+                    // Recopilar opciones del paso (normales, de enlace, de WhatsApp y formularios)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
                     const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
                     const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
                     const whatsappTexts = step.querySelectorAll(`input[name^="${stepId}_whatsapp_text_"]`);
                     const whatsappContacts = step.querySelectorAll(`select[name^="${stepId}_whatsapp_contact_"]`);
+                    const formTexts = step.querySelectorAll(`input[name^="${stepId}_form_text_"]`);
+                    const formContacts = step.querySelectorAll(`select[name^="${stepId}_form_contact_"]`);
                     
                     const options = [];
                     
@@ -682,6 +882,47 @@ class WAC_Chat_Funnels_Simple {
                                 text: textInput.value.trim(),
                                 contact: parseInt(contactSelect.value),
                                 type: 'whatsapp'
+                            });
+                        }
+                    });
+                    
+                    // Agregar opciones de formulario
+                    formTexts.forEach((textInput, index) => {
+                        const contactSelect = formContacts[index];
+                        if (textInput.value.trim() && contactSelect.value.trim()) {
+                            // Recopilar campos del formulario
+                            const formOptionId = textInput.name.match(/form_text_(\d+)/)[1];
+                            const formFields = [];
+                            
+                            // Buscar todos los campos de este formulario
+                            const fieldLabels = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_label"]`);
+                            const fieldTypes = step.querySelectorAll(`select[name^="form_${formOptionId}_field_"][name$="_type"]`);
+                            const fieldRequired = step.querySelectorAll(`input[name^="form_${formOptionId}_field_"][name$="_required"]`);
+                            const fieldOptions = step.querySelectorAll(`textarea[name^="form_${formOptionId}_field_"][name$="_options"]`);
+                            
+                            fieldLabels.forEach((labelInput, fieldIndex) => {
+                                if (labelInput.value.trim()) {
+                                    const field = {
+                                        label: labelInput.value.trim(),
+                                        type: fieldTypes[fieldIndex] ? fieldTypes[fieldIndex].value : 'text',
+                                        required: fieldRequired[fieldIndex] ? fieldRequired[fieldIndex].checked : false
+                                    };
+                                    
+                                    // Si es un campo select, agregar las opciones
+                                    if (field.type === 'select' && fieldOptions[fieldIndex]) {
+                                        const optionsText = fieldOptions[fieldIndex].value.trim();
+                                        field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                    }
+                                    
+                                    formFields.push(field);
+                                }
+                            });
+                            
+                            options.push({
+                                text: textInput.value.trim(),
+                                contact: parseInt(contactSelect.value),
+                                type: 'form',
+                                fields: formFields
                             });
                         }
                     });
@@ -805,6 +1046,81 @@ class WAC_Chat_Funnels_Simple {
                                             </div>
                                         </div>
                                     `;
+                                } else if (option.type === 'form') {
+                                    // Opción de formulario
+                                    const contacts = wacSavedSteps.whatsapp_contacts || [];
+                                    let contactOptions = '';
+                                    contacts.forEach((contactNumber, index) => {
+                                        if (contactNumber.trim()) {
+                                            const selected = option.contact === (index + 1) ? 'selected' : '';
+                                            contactOptions += `<option value="${index + 1}" ${selected}>WhatsApp ${index + 1} (${contactNumber})</option>`;
+                                        }
+                                    });
+                                    
+                                    const formFieldsHTML = option.fields ? option.fields.map((field, fieldIndex) => `
+                                        <div class="wac-form-field" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                                <strong>Campo ${fieldIndex + 1}</strong>
+                                                <button type="button" class="button button-small" onclick="removeFormField('${optionId}', '${Date.now() + fieldIndex}')">Eliminar</button>
+                                            </div>
+                                            <div style="margin-bottom: 10px;">
+                                                <label>Etiqueta del campo:</label>
+                                                <input type="text" name="form_${optionId}_field_${Date.now() + fieldIndex}_label" placeholder="Ej: Nombre, Email, Teléfono" style="width: 100%; margin-top: 5px;" value="${field.label || ''}">
+                                            </div>
+                                            <div style="margin-bottom: 10px;">
+                                                <label>Tipo de campo:</label>
+                                                <select name="form_${optionId}_field_${Date.now() + fieldIndex}_type" style="width: 100%; margin-top: 5px;" onchange="handleFieldTypeChange('${optionId}', '${Date.now() + fieldIndex}', this.value)">
+                                                    <option value="text" ${field.type === 'text' ? 'selected' : ''}>Texto</option>
+                                                    <option value="email" ${field.type === 'email' ? 'selected' : ''}>Email</option>
+                                                    <option value="select" ${field.type === 'select' ? 'selected' : ''}>Lista desplegable</option>
+                                                    <option value="textarea" ${field.type === 'textarea' ? 'selected' : ''}>Texto largo</option>
+                                                </select>
+                                            </div>
+                                            <div id="field_options_${optionId}_${Date.now() + fieldIndex}" style="margin-bottom: 10px;">
+                                                ${field.type === 'select' ? `
+                                                    <label>Opciones (una por línea):</label>
+                                                    <textarea name="form_${optionId}_field_${Date.now() + fieldIndex}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;">${field.options ? field.options.join('\\n') : ''}</textarea>
+                                                ` : ''}
+                                            </div>
+                                            <div style="margin-bottom: 10px;">
+                                                <label>
+                                                    <input type="checkbox" name="form_${optionId}_field_${Date.now() + fieldIndex}_required" value="1" ${field.required ? 'checked' : ''}>
+                                                    Campo obligatorio
+                                                </label>
+                                            </div>
+                                        </div>
+                                    `).join('') : '';
+                                    
+                                    optionsHTML += `
+                                        <div class="wac-option-item wac-form-option">
+                                            <div class="wac-form-config">
+                                                <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                                                    <strong>📝 Configuración del Formulario</strong>
+                                                </div>
+                                                <div style="margin-bottom: 10px;">
+                                                    <label>Texto del botón del formulario:</label>
+                                                    <input type="text" name="${stepId}_form_text_${optionId}" placeholder="Ej: Solicitar cotización" class="wac-option-text" style="width: 100%; margin-top: 5px;" value="${option.text || ''}">
+                                                </div>
+                                                <div style="margin-bottom: 10px;">
+                                                    <label>Enviar datos a:</label>
+                                                    <select name="${stepId}_form_contact_${optionId}" class="wac-option-target" style="width: 100%; margin-top: 5px;">
+                                                        <option value="">Seleccionar contacto</option>
+                                                        ${contactOptions}
+                                                    </select>
+                                                </div>
+                                                <div style="margin-bottom: 10px;">
+                                                    <label>Campos del formulario:</label>
+                                                    <div id="form_fields_${optionId}" style="margin-top: 10px;">
+                                                        ${formFieldsHTML}
+                                                    </div>
+                                                    <button type="button" class="button button-small" onclick="addFormField('${optionId}')" style="margin-top: 10px;">
+                                                        + Agregar campo
+                                                    </button>
+                                                </div>
+                                                <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                            </div>
+                                        </div>
+                                    `;
                                 } else {
                                     // Opción normal de paso
                                     optionsHTML += `
@@ -844,6 +1160,9 @@ class WAC_Chat_Funnels_Simple {
                                         </button>
                                         <button type="button" class="wac-add-option-btn" onclick="addWhatsAppContactOption('${stepId}')" style="background: #25d366; border-color: #25d366;">
                                             📱 Añadir contacto
+                                        </button>
+                                        <button type="button" class="wac-add-option-btn" onclick="addFormOption('${stepId}')" style="background: #6f42c1; border-color: #6f42c1;">
+                                            📝 Añadir formulario
                                         </button>
                                     </div>
                                 </div>
