@@ -316,6 +316,52 @@ class WAC_Chat_Funnels_Simple {
             </tr>
         </table>
         
+        <h3>🎨 Personalización de Colores</h3>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Color del Header', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_header_color" name="wac_header_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_color', true) ?: '#ff6b35'); ?>" />
+                    <p class="description"><?php _e('Color de fondo del encabezado del chat', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color del Texto del Header', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_header_text_color" name="wac_header_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_header_text_color', true) ?: '#ffffff'); ?>" />
+                    <p class="description"><?php _e('Color del texto en el encabezado', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color de Fondo de Botones', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_button_bg_color" name="wac_button_bg_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_bg_color', true) ?: '#ff6b35'); ?>" />
+                    <p class="description"><?php _e('Color de fondo de los botones de opciones', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color del Texto de Botones', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_button_text_color" name="wac_button_text_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_text_color', true) ?: '#ffffff'); ?>" />
+                    <p class="description"><?php _e('Color del texto en los botones', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color de Borde de Botones', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_button_border_color" name="wac_button_border_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_button_border_color', true) ?: '#ff6b35'); ?>" />
+                    <p class="description"><?php _e('Color del borde de los botones', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Color del Botón Principal', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="color" id="wac_toggle_color" name="wac_toggle_color" value="<?php echo esc_attr(get_post_meta($post->ID, '_wac_toggle_color', true) ?: '#ff6b35'); ?>" />
+                    <p class="description"><?php _e('Color del botón flotante para abrir el chat', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
         <h3>📱 Contactos de WhatsApp</h3>
         <table class="form-table">
             <tr>
@@ -1625,6 +1671,31 @@ class WAC_Chat_Funnels_Simple {
             update_post_meta($post_id, '_wac_target_pages', sanitize_text_field($_POST['wac_target_pages']));
         }
         
+        // Guardar colores personalizados
+        if (isset($_POST['wac_header_color'])) {
+            update_post_meta($post_id, '_wac_header_color', sanitize_hex_color($_POST['wac_header_color']));
+        }
+        
+        if (isset($_POST['wac_header_text_color'])) {
+            update_post_meta($post_id, '_wac_header_text_color', sanitize_hex_color($_POST['wac_header_text_color']));
+        }
+        
+        if (isset($_POST['wac_button_bg_color'])) {
+            update_post_meta($post_id, '_wac_button_bg_color', sanitize_hex_color($_POST['wac_button_bg_color']));
+        }
+        
+        if (isset($_POST['wac_button_text_color'])) {
+            update_post_meta($post_id, '_wac_button_text_color', sanitize_hex_color($_POST['wac_button_text_color']));
+        }
+        
+        if (isset($_POST['wac_button_border_color'])) {
+            update_post_meta($post_id, '_wac_button_border_color', sanitize_hex_color($_POST['wac_button_border_color']));
+        }
+        
+        if (isset($_POST['wac_toggle_color'])) {
+            update_post_meta($post_id, '_wac_toggle_color', sanitize_hex_color($_POST['wac_toggle_color']));
+        }
+        
         // Guardar pasos del funnel
         if (isset($_POST['wac_funnel_steps'])) {
             $steps_data = json_decode(stripslashes($_POST['wac_funnel_steps']), true);
@@ -1757,7 +1828,26 @@ class WAC_Chat_Funnels_Simple {
         
         $teaser_text = get_post_meta($funnel_data->ID, '_wac_teaser_text', true) ?: '¿Necesitas ayuda?';
         $teaser_delay = get_post_meta($funnel_data->ID, '_wac_teaser_delay', true) ?: 3000;
+        
+        // Obtener colores personalizados
+        $header_color = get_post_meta($funnel_data->ID, '_wac_header_color', true) ?: '#ff6b35';
+        $header_text_color = get_post_meta($funnel_data->ID, '_wac_header_text_color', true) ?: '#ffffff';
+        $button_bg_color = get_post_meta($funnel_data->ID, '_wac_button_bg_color', true) ?: '#ff6b35';
+        $button_text_color = get_post_meta($funnel_data->ID, '_wac_button_text_color', true) ?: '#ffffff';
+        $button_border_color = get_post_meta($funnel_data->ID, '_wac_button_border_color', true) ?: '#ff6b35';
+        $toggle_color = get_post_meta($funnel_data->ID, '_wac_toggle_color', true) ?: '#ff6b35';
         ?>
+        
+        <style>
+        :root {
+            --wac-header-color: <?php echo esc_attr($header_color); ?>;
+            --wac-header-text-color: <?php echo esc_attr($header_text_color); ?>;
+            --wac-button-bg-color: <?php echo esc_attr($button_bg_color); ?>;
+            --wac-button-text-color: <?php echo esc_attr($button_text_color); ?>;
+            --wac-button-border-color: <?php echo esc_attr($button_border_color); ?>;
+            --wac-toggle-color: <?php echo esc_attr($toggle_color); ?>;
+        }
+        </style>
         
         <!-- WAC Chat Widget -->
         <div id="wac-chat-toggle" style="display: none;">

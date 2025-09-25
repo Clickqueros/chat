@@ -26,10 +26,10 @@
     display: block !important;
 }
 
-/* Header naranja estilo JoinChat */
+/* Header personalizable */
 .wac-widget-header {
-    background: #ff6b35 !important;
-    color: white !important;
+    background: var(--wac-header-color, #ff6b35) !important;
+    color: var(--wac-header-text-color, white) !important;
     padding: 15px 20px;
     border-radius: 20px 20px 0 0;
     display: flex;
@@ -107,8 +107,8 @@
 
 .wac-option {
     background: white !important;
-    border: 2px solid #ff6b35 !important;
-    color: #333 !important;
+    border: 2px solid var(--wac-button-border-color, #ff6b35) !important;
+    color: var(--wac-button-text-color, #333) !important;
     padding: 12px 16px !important;
     border-radius: 25px !important;
     margin-bottom: 8px !important;
@@ -126,8 +126,8 @@
 }
 
 .wac-option:hover {
-    background: #ff6b35 !important;
-    color: white !important;
+    background: var(--wac-button-bg-color, #ff6b35) !important;
+    color: var(--wac-button-text-color, white) !important;
     transform: translateY(-1px) !important;
     box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3) !important;
 }
@@ -269,14 +269,14 @@
     background: #128c7e;
 }
 
-/* Botón toggle flotante */
+/* Botón toggle flotante personalizable */
 #wac-chat-toggle {
     position: fixed;
     bottom: 20px;
     right: 20px;
     width: 60px;
     height: 60px;
-    background: #ff6b35;
+    background: var(--wac-toggle-color, #ff6b35);
     border: none;
     border-radius: 50%;
     color: white;
@@ -406,7 +406,7 @@
 .wac-typing-dot {
     width: 8px !important;
     height: 8px !important;
-    background: #ff6b35 !important;
+    background: var(--wac-button-bg-color, #ff6b35) !important;
     border-radius: 50% !important;
     animation: typingDot 1.2s infinite ease-in-out !important;
 }
