@@ -15,13 +15,31 @@
     
     // Inicializar cuando el DOM esté listo
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('WAC Frontend - DOM Content Loaded, inicializando widget...');
         initChatWidget();
     });
     
+    // También intentar inicializar después de un pequeño delay
+    setTimeout(function() {
+        console.log('WAC Frontend - Timeout initialization...');
+        if (!chatWidget) {
+            initChatWidget();
+        }
+    }, 1000);
+    
     function initChatWidget() {
+        console.log('WAC Frontend - initChatWidget llamado');
         chatWidget = document.getElementById('wac-chat-widget');
-        if (!chatWidget) return;
+        if (!chatWidget) {
+            console.log('WAC Frontend - No se encontró el widget, buscando alternativas...');
+            chatWidget = document.querySelector('#wac-chat-widget');
+            if (!chatWidget) {
+                console.log('WAC Frontend - Widget no encontrado en el DOM');
+                return;
+            }
+        }
         
+        console.log('WAC Frontend - Widget encontrado:', chatWidget);
         console.log('WAC Chat Widget inicializado');
         
         // Cargar configuración del funnel
@@ -134,11 +152,20 @@
     
     function addEventListeners() {
         const widgetContent = chatWidget.querySelector('.wac-widget-content');
-        if (!widgetContent) return;
+        if (!widgetContent) {
+            console.log('WAC Frontend - No se encontró widgetContent');
+            return;
+        }
+        
+        console.log('WAC Frontend - Agregando event listeners...');
+        console.log('WAC Frontend - HTML del widget:', widgetContent.innerHTML);
         
         // Event listeners para botones de opciones
         const optionButtons = widgetContent.querySelectorAll('.wac-option-button');
-        optionButtons.forEach(button => {
+        console.log('WAC Frontend - Botones de opciones encontrados:', optionButtons.length);
+        
+        optionButtons.forEach((button, index) => {
+            console.log(`WAC Frontend - Botón ${index}:`, button);
             button.addEventListener('click', function() {
                 const targetStep = parseInt(this.getAttribute('data-target-step'));
                 console.log('WAC Frontend - Botón de opción clickeado, target step:', targetStep);
