@@ -834,12 +834,18 @@ class WAC_Chat_Funnels_Simple {
                                 }
                             });
                             
-                            options.push({
+                            const formOption = {
                                 text: textInput.value.trim(),
                                 contact: parseInt(contactSelect.value),
                                 type: 'form',
                                 fields: formFields
-                            });
+                            };
+                            
+                            console.log('=== FORMULARIO FINAL GUARDADO ===');
+                            console.log('Formulario completo:', formOption);
+                            console.log('Campos del formulario:', formFields);
+                            
+                            options.push(formOption);
                         }
                     });
                     
@@ -981,12 +987,18 @@ class WAC_Chat_Funnels_Simple {
                                 }
                             });
                             
-                            options.push({
+                            const formOption = {
                                 text: textInput.value.trim(),
                                 contact: parseInt(contactSelect.value),
                                 type: 'form',
                                 fields: formFields
-                            });
+                            };
+                            
+                            console.log('=== FORMULARIO FINAL GUARDADO ===');
+                            console.log('Formulario completo:', formOption);
+                            console.log('Campos del formulario:', formFields);
+                            
+                            options.push(formOption);
                         }
                     });
                     
@@ -1120,8 +1132,16 @@ class WAC_Chat_Funnels_Simple {
                                         }
                                     });
                                     
-                                    console.log('Cargando formulario con campos:', option.fields);
-                                    const formFieldsHTML = option.fields ? option.fields.map((field, fieldIndex) => `
+                                    console.log('=== CARGANDO FORMULARIO ===');
+                                    console.log('Formulario completo:', option);
+                                    console.log('Campos del formulario:', option.fields);
+                                    
+                                    const formFieldsHTML = option.fields ? option.fields.map((field, fieldIndex) => {
+                                        console.log(`Campo ${fieldIndex}:`, field);
+                                        if (field.type === 'select') {
+                                            console.log('Campo SELECT encontrado con opciones:', field.options);
+                                        }
+                                        return `
                                         <div class="wac-form-field" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;">
                                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                                 <strong>Campo ${fieldIndex + 1}</strong>
@@ -1153,7 +1173,8 @@ class WAC_Chat_Funnels_Simple {
                                                 </label>
                                             </div>
                                         </div>
-                                    `).join('') : '';
+                                    `;
+                                    }).join('') : '';
                                     
                                     optionsHTML += `
                                         <div class="wac-option-item wac-form-option">

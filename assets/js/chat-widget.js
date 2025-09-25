@@ -382,9 +382,12 @@
                             <option value="">Selecciona una opción</option>
                     `;
                     if (field.options && Array.isArray(field.options)) {
+                        console.log('Frontend - Agregando opciones al select:', field.options);
                         field.options.forEach(option => {
                             formHTML += `<option value="${option}">${option}</option>`;
                         });
+                    } else {
+                        console.log('Frontend - No hay opciones para el select:', field.options);
                     }
                     formHTML += `</select>`;
                 } else {
