@@ -175,4 +175,10 @@
         handleWhatsApp: handleWhatsApp
     };
     
+    // Exportar funciones individualmente para onclick
+    window.nextStep = nextStep;
+    window.goToStep = goToStep;
+    window.finishChat = finishChat;
+    window.handleWhatsApp = handleWhatsApp;
+    
 })();
