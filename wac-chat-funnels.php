@@ -659,10 +659,17 @@ class WAC_Chat_Funnels_Simple {
                 `;
                 
                 // Agregar evento para detectar cuando se escribe en el textarea
-                const textarea = optionsContainer.querySelector('textarea');
-                textarea.addEventListener('input', function() {
-                    console.log('TEXTAREA INPUT DETECTADO:', this.name, 'Valor:', this.value);
-                });
+                setTimeout(() => {
+                    const textarea = optionsContainer.querySelector('textarea');
+                    if (textarea) {
+                        textarea.addEventListener('input', function() {
+                            console.log('TEXTAREA INPUT DETECTADO:', this.name, 'Valor:', this.value);
+                        });
+                        console.log('Evento de input agregado al textarea:', textarea.name);
+                    } else {
+                        console.log('ERROR: No se pudo encontrar el textarea para agregar evento');
+                    }
+                }, 100);
                 console.log('Textarea de opciones creado para select con name:', textareaName);
                 
                 // Verificar que el textarea se creó correctamente
