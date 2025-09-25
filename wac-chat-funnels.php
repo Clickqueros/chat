@@ -658,18 +658,8 @@ class WAC_Chat_Funnels_Simple {
                     <textarea name="${textareaName}" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;"></textarea>
                 `;
                 
-                // Agregar evento para detectar cuando se escribe en el textarea
-                setTimeout(() => {
-                    const textarea = optionsContainer.querySelector('textarea');
-                    if (textarea) {
-                        textarea.addEventListener('input', function() {
-                            console.log('TEXTAREA INPUT DETECTADO:', this.name, 'Valor:', this.value);
-                        });
-                        console.log('Evento de input agregado al textarea:', textarea.name);
-                    } else {
-                        console.log('ERROR: No se pudo encontrar el textarea para agregar evento');
-                    }
-                }, 100);
+                // El evento se manejará por delegation en el documento
+                console.log('Textarea de opciones creado:', textareaName);
                 console.log('Textarea de opciones creado para select con name:', textareaName);
                 
                 // Verificar que el textarea se creó correctamente
@@ -1440,6 +1430,13 @@ class WAC_Chat_Funnels_Simple {
             } else {
                 console.log('No hay datos guardados para cargar');
             }
+            
+            // Event delegation para capturar inputs en textareas de opciones
+            document.addEventListener('input', function(event) {
+                if (event.target.tagName === 'TEXTAREA' && event.target.name.includes('_options')) {
+                    console.log('TEXTAREA INPUT DETECTADO:', event.target.name, 'Valor:', event.target.value);
+                }
+            });
         });
         </script>
         
