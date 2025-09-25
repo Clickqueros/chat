@@ -98,7 +98,7 @@
                 const targetStep = option.target - 1; // Convertir a índice base 0
                 console.log(`WAC Frontend - Opción ${index}:`, option.text, '-> paso', targetStep);
                 stepHTML += `
-                    <button class="wac-option-button" onclick="goToStep(${targetStep})" 
+                    <button class="wac-option-button" data-target-step="${targetStep}" 
                             style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
                         ${option.text}
                     </button>
@@ -112,14 +112,14 @@
             if (currentStep === funnelSteps.length - 1) {
                 // Último paso
                 stepHTML += `
-                    <button class="wac-button" onclick="finishChat()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
+                    <button class="wac-button wac-finish-btn" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
                         ✅ Finalizar Chat
                     </button>
                 `;
             } else {
                 // Paso intermedio
                 stepHTML += `
-                    <button class="wac-button" onclick="nextStep()" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
+                    <button class="wac-button wac-next-btn" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
                         ➡️ Continuar
                     </button>
                 `;
@@ -127,6 +127,42 @@
         }
         
         widgetContent.innerHTML = stepHTML;
+        
+        // Agregar event listeners después de insertar el HTML
+        addEventListeners();
+    }
+    
+    function addEventListeners() {
+        const widgetContent = chatWidget.querySelector('.wac-widget-content');
+        if (!widgetContent) return;
+        
+        // Event listeners para botones de opciones
+        const optionButtons = widgetContent.querySelectorAll('.wac-option-button');
+        optionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const targetStep = parseInt(this.getAttribute('data-target-step'));
+                console.log('WAC Frontend - Botón de opción clickeado, target step:', targetStep);
+                goToStep(targetStep);
+            });
+        });
+        
+        // Event listener para botón "Continuar"
+        const nextButton = widgetContent.querySelector('.wac-next-btn');
+        if (nextButton) {
+            nextButton.addEventListener('click', function() {
+                console.log('WAC Frontend - Botón Continuar clickeado');
+                nextStep();
+            });
+        }
+        
+        // Event listener para botón "Finalizar"
+        const finishButton = widgetContent.querySelector('.wac-finish-btn');
+        if (finishButton) {
+            finishButton.addEventListener('click', function() {
+                console.log('WAC Frontend - Botón Finalizar clickeado');
+                finishChat();
+            });
+        }
     }
     
     function nextStep() {
