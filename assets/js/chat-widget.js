@@ -136,13 +136,26 @@
             stepHTML += '<div class="wac-options" style="margin-bottom: 15px;">';
             
             step.options.forEach((option, index) => {
-                const targetStep = option.target - 1; // Convertir a índice base 0
-                console.log(`WAC Frontend - Opción ${index}:`, option.text, '-> paso', targetStep);
-            stepHTML += `
-                <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}">
-                    ${option.text}
-                </div>
-            `;
+                console.log(`WAC Frontend - Opción ${index}:`, option);
+                
+                if (option.type === 'link') {
+                    // Opción de enlace
+                    console.log(`WAC Frontend - Enlace:`, option.text, '-> URL:', option.url);
+                    stepHTML += `
+                        <div class="wac-option wac-link-option" role="button" tabindex="0" data-url="${option.url}">
+                            🔗 ${option.text}
+                        </div>
+                    `;
+                } else {
+                    // Opción normal de paso
+                    const targetStep = option.target - 1; // Convertir a índice base 0
+                    console.log(`WAC Frontend - Paso:`, option.text, '-> paso', targetStep);
+                    stepHTML += `
+                        <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}">
+                            ${option.text}
+                        </div>
+                    `;
+                }
             });
             
             stepHTML += '</div>';
@@ -175,9 +188,17 @@
         options.forEach((option, index) => {
             console.log(`WAC Frontend - Opción ${index}:`, option);
             option.addEventListener('click', function() {
-                const targetStep = parseInt(this.getAttribute('data-option'));
-                console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
-                goToStep(targetStep);
+                // Verificar si es una opción de enlace
+                const url = this.getAttribute('data-url');
+                if (url) {
+                    console.log('WAC Frontend - Enlace clickeado, URL:', url);
+                    window.open(url, '_blank');
+                } else {
+                    // Opción normal de paso
+                    const targetStep = parseInt(this.getAttribute('data-option'));
+                    console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
+                    goToStep(targetStep);
+                }
             });
         });
         

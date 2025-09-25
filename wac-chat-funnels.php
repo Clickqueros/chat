@@ -329,9 +329,14 @@ class WAC_Chat_Funnels_Simple {
                         <div class="wac-options-list" id="options_${stepId}">
                             <!-- Las opciones se agregarán aquí dinámicamente -->
                         </div>
-                        <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
-                            + Añadir opción
-                        </button>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
+                                + Añadir opción
+                            </button>
+                            <button type="button" class="wac-add-option-btn" onclick="addLinkOption('${stepId}')" style="background: #28a745; border-color: #28a745;">
+                                🔗 Añadir enlace
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="wac-tip">
@@ -356,7 +361,7 @@ class WAC_Chat_Funnels_Simple {
             }
         }
         
-        // Función para agregar una opción a un paso
+        // Función para agregar una opción de paso a un paso
         function addOption(stepId) {
             const optionsList = document.getElementById(`options_${stepId}`);
             const optionId = Date.now();
@@ -374,9 +379,31 @@ class WAC_Chat_Funnels_Simple {
             optionsList.appendChild(optionDiv);
         }
         
+        // Función para agregar una opción de enlace a un paso
+        function addLinkOption(stepId) {
+            const optionsList = document.getElementById(`options_${stepId}`);
+            const optionId = Date.now();
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'wac-option-item wac-link-option';
+            optionDiv.innerHTML = `
+                <div class="wac-option-fields">
+                    <input type="text" name="${stepId}_link_text_${optionId}" placeholder="Texto del enlace (ej: Ver portafolio)" class="wac-option-text">
+                    <input type="url" name="${stepId}_link_url_${optionId}" placeholder="URL (ej: https://ejemplo.com)" class="wac-option-target">
+                    <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                </div>
+            `;
+            
+            optionsList.appendChild(optionDiv);
+        }
+        
         // Función para eliminar una opción
         function removeOption(stepId, optionId) {
-            const option = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`).closest('.wac-option-item');
+            // Buscar tanto opciones normales como de enlace
+            let option = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`).closest('.wac-option-item');
+            if (!option) {
+                option = document.querySelector(`input[name="${stepId}_link_text_${optionId}"]`).closest('.wac-option-item');
+            }
             if (option) {
                 option.remove();
             }
@@ -409,17 +436,34 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso
+                    // Recopilar opciones del paso (normales y de enlace)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
+                    const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
+                    const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
                     
                     const options = [];
+                    
+                    // Agregar opciones normales
                     optionTexts.forEach((textInput, index) => {
                         const targetInput = optionTargets[index];
                         if (textInput.value.trim() && targetInput.value.trim()) {
                             options.push({
                                 text: textInput.value.trim(),
-                                target: parseInt(targetInput.value)
+                                target: parseInt(targetInput.value),
+                                type: 'step'
+                            });
+                        }
+                    });
+                    
+                    // Agregar opciones de enlace
+                    linkTexts.forEach((textInput, index) => {
+                        const urlInput = linkUrls[index];
+                        if (textInput.value.trim() && urlInput.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                url: urlInput.value.trim(),
+                                type: 'link'
                             });
                         }
                     });
@@ -449,17 +493,34 @@ class WAC_Chat_Funnels_Simple {
                 if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
                     
-                    // Recopilar opciones del paso
+                    // Recopilar opciones del paso (normales y de enlace)
                     const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
                     const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
+                    const linkTexts = step.querySelectorAll(`input[name^="${stepId}_link_text_"]`);
+                    const linkUrls = step.querySelectorAll(`input[name^="${stepId}_link_url_"]`);
                     
                     const options = [];
+                    
+                    // Agregar opciones normales
                     optionTexts.forEach((textInput, index) => {
                         const targetInput = optionTargets[index];
                         if (textInput.value.trim() && targetInput.value.trim()) {
                             options.push({
                                 text: textInput.value.trim(),
-                                target: parseInt(targetInput.value)
+                                target: parseInt(targetInput.value),
+                                type: 'step'
+                            });
+                        }
+                    });
+                    
+                    // Agregar opciones de enlace
+                    linkTexts.forEach((textInput, index) => {
+                        const urlInput = linkUrls[index];
+                        if (textInput.value.trim() && urlInput.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                url: urlInput.value.trim(),
+                                type: 'link'
                             });
                         }
                     });
@@ -524,15 +585,29 @@ class WAC_Chat_Funnels_Simple {
                         if (Array.isArray(optionsValue) && optionsValue.length > 0) {
                             optionsValue.forEach((option, index) => {
                                 const optionId = Date.now() + index;
-                                optionsHTML += `
-                                    <div class="wac-option-item">
-                                        <div class="wac-option-fields">
-                                            <input type="text" name="${stepId}_option_text_${optionId}" placeholder="Texto de la opción (ej: Cotización)" class="wac-option-text" value="${option.text || ''}">
-                                            <input type="number" name="${stepId}_option_target_${optionId}" placeholder="Paso destino" class="wac-option-target" min="1" value="${option.target || ''}">
-                                            <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                if (option.type === 'link') {
+                                    // Opción de enlace
+                                    optionsHTML += `
+                                        <div class="wac-option-item wac-link-option">
+                                            <div class="wac-option-fields">
+                                                <input type="text" name="${stepId}_link_text_${optionId}" placeholder="Texto del enlace (ej: Ver portafolio)" class="wac-option-text" value="${option.text || ''}">
+                                                <input type="url" name="${stepId}_link_url_${optionId}" placeholder="URL (ej: https://ejemplo.com)" class="wac-option-target" value="${option.url || ''}">
+                                                <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                            </div>
                                         </div>
-                                    </div>
-                                `;
+                                    `;
+                                } else {
+                                    // Opción normal de paso
+                                    optionsHTML += `
+                                        <div class="wac-option-item">
+                                            <div class="wac-option-fields">
+                                                <input type="text" name="${stepId}_option_text_${optionId}" placeholder="Texto de la opción (ej: Cotización)" class="wac-option-text" value="${option.text || ''}">
+                                                <input type="number" name="${stepId}_option_target_${optionId}" placeholder="Paso destino" class="wac-option-target" min="1" value="${option.target || ''}">
+                                                <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
                             });
                         }
                         
@@ -551,9 +626,14 @@ class WAC_Chat_Funnels_Simple {
                                     <div class="wac-options-list" id="options_${stepId}">
                                         ${optionsHTML}
                                     </div>
-                                    <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
-                                        + Añadir opción
-                                    </button>
+                                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                                        <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
+                                            + Añadir opción
+                                        </button>
+                                        <button type="button" class="wac-add-option-btn" onclick="addLinkOption('${stepId}')" style="background: #28a745; border-color: #28a745;">
+                                            🔗 Añadir enlace
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div class="wac-tip">
