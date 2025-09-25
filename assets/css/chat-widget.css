@@ -287,24 +287,28 @@
     height: 8px !important;
     background: #ff6b35 !important;
     border-radius: 50% !important;
-    animation: typingDot 1.4s infinite ease-in-out !important;
+    animation: typingDot 1.2s infinite ease-in-out !important;
 }
 
 .wac-typing-dot:nth-child(1) {
-    animation-delay: -0.32s !important;
+    animation-delay: 0s !important;
 }
 
 .wac-typing-dot:nth-child(2) {
-    animation-delay: -0.16s !important;
+    animation-delay: 0.2s !important;
+}
+
+.wac-typing-dot:nth-child(3) {
+    animation-delay: 0.4s !important;
 }
 
 @keyframes typingDot {
-    0%, 80%, 100% {
-        transform: scale(0.8) !important;
-        opacity: 0.5 !important;
+    0%, 70%, 100% {
+        transform: scale(0.8) translateY(0) !important;
+        opacity: 0.3 !important;
     }
-    40% {
-        transform: scale(1) !important;
+    35% {
+        transform: scale(1.1) translateY(-6px) !important;
         opacity: 1 !important;
     }
 }
