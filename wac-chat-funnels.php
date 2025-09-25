@@ -1095,8 +1095,15 @@ class WAC_Chat_Funnels_Simple {
         
         error_log('WAC Debug - steps procesados: ' . print_r($steps, true));
         
+        // Obtener contactos de WhatsApp
+        $whatsapp_contacts = array();
+        if (isset($steps_data['whatsapp_contacts']) && is_array($steps_data['whatsapp_contacts'])) {
+            $whatsapp_contacts = $steps_data['whatsapp_contacts'];
+        }
+        
         return array(
             'steps' => $steps,
+            'whatsapp_contacts' => $whatsapp_contacts,
             'teaser' => array(
                 'text' => $teaser_text ?: '¿Necesitas ayuda?',
                 'delay' => $teaser_delay ?: 3000

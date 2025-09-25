@@ -198,6 +198,14 @@
                         🔗 ${option.text}
                     </div>
                 `;
+            } else if (option.type === 'whatsapp') {
+                // Opción de WhatsApp
+                console.log(`WAC Frontend - WhatsApp:`, option.text, '-> contacto:', option.contact);
+                optionsHTML += `
+                    <div class="wac-option wac-whatsapp-option" role="button" tabindex="0" data-contact="${option.contact}">
+                        📱 ${option.text}
+                    </div>
+                `;
             } else {
                 // Opción normal de paso
                 const targetStep = option.target - 1; // Convertir a índice base 0
@@ -245,10 +253,17 @@
                     console.log('WAC Frontend - Enlace clickeado, URL:', url);
                     window.open(url, '_blank');
                 } else {
-                    // Opción normal de paso
-                    const targetStep = parseInt(this.getAttribute('data-option'));
-                    console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
-                    goToStep(targetStep);
+                    // Verificar si es una opción de WhatsApp
+                    const contactIndex = this.getAttribute('data-contact');
+                    if (contactIndex) {
+                        console.log('WAC Frontend - WhatsApp clickeado, contacto:', contactIndex);
+                        handleWhatsAppContact(parseInt(contactIndex));
+                    } else {
+                        // Opción normal de paso
+                        const targetStep = parseInt(this.getAttribute('data-option'));
+                        console.log('WAC Frontend - Opción clickeada, target step:', targetStep);
+                        goToStep(targetStep);
+                    }
                 }
             });
         });
@@ -287,6 +302,27 @@
         const phoneNumber = '+573142400850'; // Número por defecto
         const message = encodeURIComponent('Hola, quiero más información');
         window.open(`https://wa.me/${phoneNumber.replace('+', '')}?text=${message}`, '_blank');
+    }
+    
+    function handleWhatsAppContact(contactIndex) {
+        console.log('WAC Frontend - handleWhatsAppContact llamado con:', contactIndex);
+        
+        // Obtener contactos de WhatsApp desde los datos del funnel
+        if (typeof wacFunnelData !== 'undefined' && wacFunnelData.whatsapp_contacts) {
+            const contacts = wacFunnelData.whatsapp_contacts;
+            if (contacts && contacts[contactIndex - 1]) {
+                const phoneNumber = contacts[contactIndex - 1];
+                const message = encodeURIComponent('Hola, quiero más información');
+                console.log('WAC Frontend - Abriendo WhatsApp con número:', phoneNumber);
+                window.open(`https://wa.me/${phoneNumber.replace('+', '')}?text=${message}`, '_blank');
+            } else {
+                console.error('WAC Frontend - Contacto WhatsApp no encontrado:', contactIndex);
+                alert('Error: Contacto de WhatsApp no encontrado');
+            }
+        } else {
+            console.error('WAC Frontend - Datos de contactos WhatsApp no disponibles');
+            alert('Error: Contactos de WhatsApp no configurados');
+        }
     }
     
     // Función para abrir/cerrar el chat
