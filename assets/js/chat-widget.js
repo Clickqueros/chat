@@ -42,11 +42,34 @@
         console.log('WAC Frontend - Widget encontrado:', chatWidget);
         console.log('WAC Chat Widget inicializado');
         
+        // Agregar event listeners para los botones principales del widget
+        addMainWidgetEventListeners();
+        
         // Cargar configuración del funnel
         loadFunnelConfig();
         
         // Mostrar primer paso
         showCurrentStep();
+    }
+    
+    function addMainWidgetEventListeners() {
+        // Event listener para el botón toggle del chat
+        const toggleButton = document.getElementById('wac-chat-toggle');
+        if (toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                console.log('WAC Frontend - Toggle button clickeado');
+                toggleChat();
+            });
+        }
+        
+        // Event listener para el botón cerrar del chat
+        const closeButton = chatWidget.querySelector('.wac-widget-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function() {
+                console.log('WAC Frontend - Close button clickeado');
+                toggleChat();
+            });
+        }
     }
     
     function loadFunnelConfig() {

@@ -839,14 +839,14 @@ class WAC_Chat_Funnels_Simple {
         ?>
         
         <!-- WAC Chat Widget -->
-        <div id="wac-chat-toggle" onclick="WACChat.toggle()" style="display: none;">
+        <div id="wac-chat-toggle" style="display: none;">
             💬
         </div>
         
         <div id="wac-chat-widget" class="wac-open">
             <div class="wac-widget-header">
                 <h3 class="wac-widget-title">Asistente Virtual</h3>
-                <button class="wac-widget-close" onclick="WACChat.toggle()">×</button>
+                <button class="wac-widget-close">×</button>
             </div>
             <div class="wac-widget-content">
                 <!-- El contenido se carga dinámicamente via JavaScript -->
