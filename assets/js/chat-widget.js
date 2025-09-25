@@ -129,45 +129,93 @@
             </div>
         `;
         
-        // Mostrar opciones si existen
+        // Mostrar mensaje primero
+        widgetContent.innerHTML = stepHTML;
+        
+        // Si hay opciones, mostrar typing indicator y luego las opciones
         console.log('WAC Frontend - step.options:', step.options);
         if (step.options && Array.isArray(step.options) && step.options.length > 0) {
             console.log('WAC Frontend - Mostrando opciones:', step.options.length);
-            stepHTML += '<div class="wac-options" style="margin-bottom: 15px;">';
             
-            step.options.forEach((option, index) => {
-                console.log(`WAC Frontend - Opción ${index}:`, option);
-                
-                if (option.type === 'link') {
-                    // Opción de enlace
-                    console.log(`WAC Frontend - Enlace:`, option.text, '-> URL:', option.url);
-                    stepHTML += `
-                        <div class="wac-option wac-link-option" role="button" tabindex="0" data-url="${option.url}">
-                            🔗 ${option.text}
-                        </div>
-                    `;
-                } else {
-                    // Opción normal de paso
-                    const targetStep = option.target - 1; // Convertir a índice base 0
-                    console.log(`WAC Frontend - Paso:`, option.text, '-> paso', targetStep);
-                    stepHTML += `
-                        <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}">
-                            ${option.text}
-                        </div>
-                    `;
-                }
+            // Mostrar typing indicator primero
+            showTypingIndicator(() => {
+                // Después de 1.5 segundos, mostrar las opciones
+                showOptions(step.options);
             });
-            
-            stepHTML += '</div>';
         } else {
             console.log('WAC Frontend - No hay opciones o están vacías');
-            // Si no hay opciones, no mostrar nada adicional
-            // Solo el mensaje del paso
+            // Si no hay opciones, agregar event listeners inmediatamente
+            addEventListeners();
         }
+    }
+    
+    function showTypingIndicator(callback) {
+        const widgetContent = chatWidget.querySelector('.wac-widget-content');
+        if (!widgetContent) return;
         
-        widgetContent.innerHTML = stepHTML;
+        // Agregar typing indicator
+        const typingHTML = `
+            <div class="wac-typing-indicator">
+                <div class="wac-typing-dots">
+                    <div class="wac-typing-dot"></div>
+                    <div class="wac-typing-dot"></div>
+                    <div class="wac-typing-dot"></div>
+                </div>
+            </div>
+        `;
         
-        // Agregar event listeners después de insertar el HTML
+        widgetContent.insertAdjacentHTML('beforeend', typingHTML);
+        
+        // Ejecutar callback después de 1.5 segundos
+        setTimeout(() => {
+            // Remover typing indicator
+            const typingIndicator = widgetContent.querySelector('.wac-typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+            
+            // Ejecutar callback
+            if (callback) callback();
+        }, 1500);
+    }
+    
+    function showOptions(options) {
+        const widgetContent = chatWidget.querySelector('.wac-widget-content');
+        if (!widgetContent) return;
+        
+        console.log('WAC Frontend - Mostrando opciones con animación');
+        
+        let optionsHTML = '<div class="wac-options" style="margin-bottom: 15px;">';
+        
+        options.forEach((option, index) => {
+            console.log(`WAC Frontend - Opción ${index}:`, option);
+            
+            if (option.type === 'link') {
+                // Opción de enlace
+                console.log(`WAC Frontend - Enlace:`, option.text, '-> URL:', option.url);
+                optionsHTML += `
+                    <div class="wac-option wac-link-option" role="button" tabindex="0" data-url="${option.url}">
+                        🔗 ${option.text}
+                    </div>
+                `;
+            } else {
+                // Opción normal de paso
+                const targetStep = option.target - 1; // Convertir a índice base 0
+                console.log(`WAC Frontend - Paso:`, option.text, '-> paso', targetStep);
+                optionsHTML += `
+                    <div class="wac-option" role="button" tabindex="0" data-option="${targetStep}">
+                        ${option.text}
+                    </div>
+                `;
+            }
+        });
+        
+        optionsHTML += '</div>';
+        
+        // Insertar opciones
+        widgetContent.insertAdjacentHTML('beforeend', optionsHTML);
+        
+        // Agregar event listeners después de insertar las opciones
         addEventListeners();
     }
     
