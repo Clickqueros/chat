@@ -787,7 +787,9 @@ class WAC_Chat_Funnels_Simple {
                                     // Si es un campo select, agregar las opciones
                                     if (field.type === 'select' && fieldOptions[fieldIndex]) {
                                         const optionsText = fieldOptions[fieldIndex].value.trim();
+                                        console.log('Guardando opciones select:', optionsText);
                                         field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                        console.log('Opciones procesadas:', field.options);
                                     }
                                     
                                     formFields.push(field);
@@ -911,7 +913,9 @@ class WAC_Chat_Funnels_Simple {
                                     // Si es un campo select, agregar las opciones
                                     if (field.type === 'select' && fieldOptions[fieldIndex]) {
                                         const optionsText = fieldOptions[fieldIndex].value.trim();
+                                        console.log('Guardando opciones select:', optionsText);
                                         field.options = optionsText.split('\n').map(opt => opt.trim()).filter(opt => opt);
+                                        console.log('Opciones procesadas:', field.options);
                                     }
                                     
                                     formFields.push(field);
@@ -1057,6 +1061,7 @@ class WAC_Chat_Funnels_Simple {
                                         }
                                     });
                                     
+                                    console.log('Cargando formulario con campos:', option.fields);
                                     const formFieldsHTML = option.fields ? option.fields.map((field, fieldIndex) => `
                                         <div class="wac-form-field" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: white;">
                                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
@@ -1079,7 +1084,7 @@ class WAC_Chat_Funnels_Simple {
                                             <div id="field_options_${optionId}_${Date.now() + fieldIndex}" style="margin-bottom: 10px;">
                                                 ${field.type === 'select' ? `
                                                     <label>Opciones (una por línea):</label>
-                                                    <textarea name="form_${optionId}_field_${Date.now() + fieldIndex}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;">${field.options ? field.options.join('\\n') : ''}</textarea>
+                                                    <textarea name="form_${optionId}_field_${Date.now() + fieldIndex}_options" placeholder="Opción 1&#10;Opción 2&#10;Opción 3" style="width: 100%; height: 80px; margin-top: 5px;">${field.options ? (console.log('Cargando opciones select:', field.options), field.options.join('\n')) : ''}</textarea>
                                                 ` : ''}
                                             </div>
                                             <div style="margin-bottom: 10px;">
