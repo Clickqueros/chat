@@ -142,6 +142,41 @@ class WAC_Chat_Funnels_Simple {
         }
         </style>
         
+        <h3><?php _e('Configuración Básica', 'wac-chat-funnels'); ?></h3>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Estado', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <label>
+                        <input type="checkbox" name="wac_enabled" value="1" <?php checked($enabled, 1); ?> />
+                        <?php _e('Activar este funnel', 'wac-chat-funnels'); ?>
+                    </label>
+                    <p class="description"><?php _e('Solo un funnel puede estar activo a la vez', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Texto del Teaser', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="text" name="wac_teaser_text" value="<?php echo esc_attr($teaser_text); ?>" class="regular-text" />
+                    <p class="description"><?php _e('Texto que aparece en la burbuja inicial', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Retraso del Teaser (ms)', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="number" name="wac_teaser_delay" value="<?php echo esc_attr($teaser_delay); ?>" min="1000" max="10000" step="1000" />
+                    <p class="description"><?php _e('Tiempo antes de mostrar el teaser', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Número de WhatsApp', 'wac-chat-funnels'); ?></th>
+                <td>
+                    <input type="text" name="wac_whatsapp_number" value="<?php echo esc_attr($whatsapp_number); ?>" class="regular-text" />
+                    <p class="description"><?php _e('Número completo con código de país (ej: +573154543344)', 'wac-chat-funnels'); ?></p>
+                </td>
+            </tr>
+        </table>
+        
         <h3>🚀 Editor de Funnel - SOLO TIPO MENSAJE</h3>
         <p><strong>Instrucciones:</strong> Haz clic en "+ Agregar Paso" para crear mensajes simples. Cada paso solo tiene un mensaje y una acción.</p>
         
@@ -540,7 +575,112 @@ class WAC_Chat_Funnels_Simple {
     }
     
     public function enqueue_scripts() {
-        // Scripts del frontend (por implementar)
+        // Solo cargar en páginas públicas
+        if (is_admin()) return;
+        
+        // Verificar si hay un funnel activo
+        $active_funnel = $this->get_active_funnel();
+        if (!$active_funnel) return;
+        
+        // Encolar CSS y JS del widget
+        wp_enqueue_style('wac-chat-widget', plugin_dir_url(__FILE__) . 'assets/css/chat-widget.css', array(), '1.0.0');
+        wp_enqueue_script('wac-chat-widget', plugin_dir_url(__FILE__) . 'assets/js/chat-widget.js', array(), '1.0.0', true);
+        
+        // Pasar datos del funnel al JavaScript
+        $funnel_data = $this->prepare_funnel_data($active_funnel);
+        wp_localize_script('wac-chat-widget', 'wacFunnelData', $funnel_data);
+        
+        // Agregar el widget al footer
+        add_action('wp_footer', array($this, 'render_chat_widget'));
+    }
+    
+    private function get_active_funnel() {
+        // Buscar un funnel activo
+        $funnels = get_posts(array(
+            'post_type' => 'wac_chat_funnel',
+            'post_status' => 'publish',
+            'posts_per_page' => 1,
+            'meta_query' => array(
+                array(
+                    'key' => '_wac_enabled',
+                    'value' => '1',
+                    'compare' => '='
+                )
+            )
+        ));
+        
+        return !empty($funnels) ? $funnels[0] : null;
+    }
+    
+    private function prepare_funnel_data($funnel_post) {
+        $steps_data = get_post_meta($funnel_post->ID, '_wac_funnel_steps_data', true);
+        $teaser_text = get_post_meta($funnel_post->ID, '_wac_teaser_text', true);
+        $teaser_delay = get_post_meta($funnel_post->ID, '_wac_teaser_delay', true);
+        $whatsapp_number = get_post_meta($funnel_post->ID, '_wac_whatsapp_number', true);
+        
+        // Convertir datos de pasos al formato esperado por el frontend
+        $steps = array();
+        if ($steps_data && is_array($steps_data)) {
+            foreach ($steps_data as $key => $value) {
+                if (strpos($key, '_message') !== false) {
+                    $step_id = str_replace('_message', '', $key);
+                    $next_key = $step_id . '_next';
+                    
+                    $steps[] = array(
+                        'id' => $step_id,
+                        'message' => $value,
+                        'next' => isset($steps_data[$next_key]) ? $steps_data[$next_key] : 'end'
+                    );
+                }
+            }
+        }
+        
+        return array(
+            'steps' => $steps,
+            'teaser' => array(
+                'text' => $teaser_text ?: '¿Necesitas ayuda?',
+                'delay' => $teaser_delay ?: 3000
+            ),
+            'whatsapp' => $whatsapp_number ?: '+573142400850'
+        );
+    }
+    
+    public function render_chat_widget() {
+        $funnel_data = $this->get_active_funnel();
+        if (!$funnel_data) return;
+        
+        $teaser_text = get_post_meta($funnel_data->ID, '_wac_teaser_text', true) ?: '¿Necesitas ayuda?';
+        $teaser_delay = get_post_meta($funnel_data->ID, '_wac_teaser_delay', true) ?: 3000;
+        ?>
+        
+        <!-- WAC Chat Widget -->
+        <div id="wac-chat-toggle" onclick="WACChat.toggle()" style="display: none;">
+            💬
+        </div>
+        
+        <div id="wac-chat-widget" class="wac-open">
+            <div class="wac-widget-header">
+                <h3 class="wac-widget-title">Asistente Virtual</h3>
+                <button class="wac-widget-close" onclick="WACChat.toggle()">×</button>
+            </div>
+            <div class="wac-widget-content">
+                <!-- El contenido se carga dinámicamente via JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Datos del funnel para JavaScript -->
+        <script type="application/json" id="wac-funnel-data">
+            <?php echo json_encode($this->prepare_funnel_data($funnel_data)); ?>
+        </script>
+        
+        <script>
+        // Mostrar el teaser después del delay
+        setTimeout(function() {
+            document.getElementById('wac-chat-toggle').style.display = 'block';
+        }, <?php echo intval($teaser_delay); ?>);
+        </script>
+        
+        <?php
     }
     
     public function ajax_debug_database() {
