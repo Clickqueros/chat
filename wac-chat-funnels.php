@@ -140,6 +140,85 @@ class WAC_Chat_Funnels_Simple {
             border-radius: 4px;
             font-size: 12px;
         }
+        
+        /* Estilos para opciones múltiples */
+        .wac-options-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .wac-options-list {
+            margin-bottom: 10px;
+        }
+        
+        .wac-option-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .wac-option-fields {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .wac-option-text {
+            flex: 2;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .wac-option-target {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            max-width: 120px;
+        }
+        
+        .wac-remove-option {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .wac-remove-option:hover {
+            background: #c82333;
+        }
+        
+        .wac-add-option-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .wac-add-option-btn:hover {
+            background: #218838;
+        }
         </style>
         
         <h3><?php _e('Configuración Básica', 'wac-chat-funnels'); ?></h3>
@@ -245,15 +324,18 @@ class WAC_Chat_Funnels_Simple {
                     <label>Mensaje:</label>
                     <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí..."></textarea>
                     
-                    <label>Después de este mensaje:</label>
-                    <select name="${stepId}_next">
-                        <option value="">Seleccionar...</option>
-                        <option value="whatsapp">Ir a WhatsApp</option>
-                        <option value="end">Finalizar chat</option>
-                    </select>
+                    <div class="wac-options-section">
+                        <label>Opciones de respuesta:</label>
+                        <div class="wac-options-list" id="options_${stepId}">
+                            <!-- Las opciones se agregarán aquí dinámicamente -->
+                        </div>
+                        <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
+                            + Añadir opción
+                        </button>
+                    </div>
                     
                     <div class="wac-tip">
-                        <strong>💡 Tip:</strong> Este es un paso tipo "Mensaje" simple. Solo necesitas escribir el texto y elegir qué pasa después.
+                        <strong>💡 Tip:</strong> Agrega opciones para que el usuario pueda elegir qué hacer después de leer tu mensaje.
                     </div>
                 </div>
             `;
@@ -271,6 +353,32 @@ class WAC_Chat_Funnels_Simple {
                     step.remove();
                     updateStepNumbers();
                 }
+            }
+        }
+        
+        // Función para agregar una opción a un paso
+        function addOption(stepId) {
+            const optionsList = document.getElementById(`options_${stepId}`);
+            const optionId = Date.now();
+            
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'wac-option-item';
+            optionDiv.innerHTML = `
+                <div class="wac-option-fields">
+                    <input type="text" name="${stepId}_option_text_${optionId}" placeholder="Texto de la opción (ej: Cotización)" class="wac-option-text">
+                    <input type="number" name="${stepId}_option_target_${optionId}" placeholder="Paso destino" class="wac-option-target" min="1">
+                    <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                </div>
+            `;
+            
+            optionsList.appendChild(optionDiv);
+        }
+        
+        // Función para eliminar una opción
+        function removeOption(stepId, optionId) {
+            const option = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`).closest('.wac-option-item');
+            if (option) {
+                option.remove();
             }
         }
         
@@ -297,11 +405,26 @@ class WAC_Chat_Funnels_Simple {
             steps.forEach(step => {
                 const stepId = step.getAttribute('data-step-id');
                 const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
-                const nextField = step.querySelector(`select[name="${stepId}_next"]`);
                 
-                if (messageField && nextField) {
+                if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
-                    funnelData[`${stepId}_next`] = nextField.value;
+                    
+                    // Recopilar opciones del paso
+                    const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
+                    const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
+                    
+                    const options = [];
+                    optionTexts.forEach((textInput, index) => {
+                        const targetInput = optionTargets[index];
+                        if (textInput.value.trim() && targetInput.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                target: parseInt(targetInput.value)
+                            });
+                        }
+                    });
+                    
+                    funnelData[`${stepId}_options`] = options;
                 }
             });
             
@@ -322,11 +445,26 @@ class WAC_Chat_Funnels_Simple {
             steps.forEach(step => {
                 const stepId = step.getAttribute('data-step-id');
                 const messageField = step.querySelector(`textarea[name="${stepId}_message"]`);
-                const nextField = step.querySelector(`select[name="${stepId}_next"]`);
                 
-                if (messageField && nextField) {
+                if (messageField) {
                     funnelData[`${stepId}_message`] = messageField.value;
-                    funnelData[`${stepId}_next`] = nextField.value;
+                    
+                    // Recopilar opciones del paso
+                    const optionTexts = step.querySelectorAll(`input[name^="${stepId}_option_text_"]`);
+                    const optionTargets = step.querySelectorAll(`input[name^="${stepId}_option_target_"]`);
+                    
+                    const options = [];
+                    optionTexts.forEach((textInput, index) => {
+                        const targetInput = optionTargets[index];
+                        if (textInput.value.trim() && targetInput.value.trim()) {
+                            options.push({
+                                text: textInput.value.trim(),
+                                target: parseInt(targetInput.value)
+                            });
+                        }
+                    });
+                    
+                    funnelData[`${stepId}_options`] = options;
                 }
             });
             
@@ -371,15 +509,33 @@ class WAC_Chat_Funnels_Simple {
                         console.log(`Recreando paso ${stepNumber}: ${stepId}`);
                         
                         const messageValue = wacSavedSteps[stepId + '_message'] || '';
-                        const nextValue = wacSavedSteps[stepId + '_next'] || '';
+                        const optionsValue = wacSavedSteps[stepId + '_options'] || [];
                         
                         console.log(`  Mensaje: "${messageValue}"`);
-                        console.log(`  Next: "${nextValue}"`);
+                        console.log(`  Opciones:`, optionsValue);
                         
                         const newStep = document.createElement('div');
                         newStep.className = 'wac-step';
                         newStep.setAttribute('data-step', stepNumber);
                         newStep.setAttribute('data-step-id', stepId);
+                        
+                        // Generar HTML de opciones
+                        let optionsHTML = '';
+                        if (Array.isArray(optionsValue) && optionsValue.length > 0) {
+                            optionsValue.forEach((option, index) => {
+                                const optionId = Date.now() + index;
+                                optionsHTML += `
+                                    <div class="wac-option-item">
+                                        <div class="wac-option-fields">
+                                            <input type="text" name="${stepId}_option_text_${optionId}" placeholder="Texto de la opción (ej: Cotización)" class="wac-option-text" value="${option.text || ''}">
+                                            <input type="number" name="${stepId}_option_target_${optionId}" placeholder="Paso destino" class="wac-option-target" min="1" value="${option.target || ''}">
+                                            <button type="button" class="wac-remove-option" onclick="removeOption('${stepId}', '${optionId}')">×</button>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        }
+                        
                         newStep.innerHTML = `
                             <div class="wac-step-header">
                                 <span class="wac-step-number">${stepNumber}</span>
@@ -390,15 +546,18 @@ class WAC_Chat_Funnels_Simple {
                                 <label>Mensaje:</label>
                                 <textarea name="${stepId}_message" placeholder="Escribe tu mensaje aquí...">${messageValue}</textarea>
                                 
-                                <label>Después de este mensaje:</label>
-                                <select name="${stepId}_next">
-                                    <option value="">Seleccionar...</option>
-                                    <option value="whatsapp" ${nextValue === 'whatsapp' ? 'selected' : ''}>Ir a WhatsApp</option>
-                                    <option value="end" ${nextValue === 'end' ? 'selected' : ''}>Finalizar chat</option>
-                                </select>
+                                <div class="wac-options-section">
+                                    <label>Opciones de respuesta:</label>
+                                    <div class="wac-options-list" id="options_${stepId}">
+                                        ${optionsHTML}
+                                    </div>
+                                    <button type="button" class="wac-add-option-btn" onclick="addOption('${stepId}')">
+                                        + Añadir opción
+                                    </button>
+                                </div>
                                 
                                 <div class="wac-tip">
-                                    <strong>💡 Tip:</strong> Este es un paso tipo "Mensaje" simple. Solo necesitas escribir el texto y elegir qué pasa después.
+                                    <strong>💡 Tip:</strong> Agrega opciones para que el usuario pueda elegir qué hacer después de leer tu mensaje.
                                 </div>
                             </div>
                         `;
@@ -518,7 +677,7 @@ class WAC_Chat_Funnels_Simple {
         
         // Event listeners para guardar automáticamente cuando cambie algo
         document.addEventListener('input', function(e) {
-            if (e.target.matches('textarea[name*="_message"], select[name*="_next"]')) {
+            if (e.target.matches('textarea[name*="_message"], input[name*="_option_text_"], input[name*="_option_target_"]')) {
                 autoSaveSilent();
             }
         });
@@ -639,6 +798,12 @@ class WAC_Chat_Funnels_Simple {
                         $step_groups[$step_id] = array('id' => $step_id);
                     }
                     $step_groups[$step_id]['next'] = $value;
+                } elseif (strpos($key, '_options') !== false) {
+                    $step_id = str_replace('_options', '', $key);
+                    if (!isset($step_groups[$step_id])) {
+                        $step_groups[$step_id] = array('id' => $step_id);
+                    }
+                    $step_groups[$step_id]['options'] = $value;
                 }
             }
             
@@ -647,7 +812,8 @@ class WAC_Chat_Funnels_Simple {
                 $steps[] = array(
                     'id' => $step['id'],
                     'message' => $step['message'] ?? 'Sin mensaje',
-                    'next' => $step['next'] ?? 'end'
+                    'next' => $step['next'] ?? 'end',
+                    'options' => $step['options'] ?? array()
                 );
             }
         }

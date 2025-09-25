@@ -88,27 +88,38 @@
             </div>
         `;
         
-        // Determinar qué botón mostrar
-        if (step.next === 'whatsapp') {
-            stepHTML += `
-                <button class="wac-button" onclick="handleWhatsApp()" style="width: 100%; padding: 10px; background: #25D366; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                    📱 Ir a WhatsApp
-                </button>
-            `;
-        } else if (step.next === 'end' && currentStep === funnelSteps.length - 1) {
-            // Solo mostrar "Finalizar" si es el último paso
-            stepHTML += `
-                <button class="wac-button" onclick="finishChat()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                    ✅ Finalizar Chat
-                </button>
-            `;
+        // Mostrar opciones si existen
+        if (step.options && Array.isArray(step.options) && step.options.length > 0) {
+            stepHTML += '<div class="wac-options" style="margin-bottom: 15px;">';
+            
+            step.options.forEach((option, index) => {
+                const targetStep = option.target - 1; // Convertir a índice base 0
+                stepHTML += `
+                    <button class="wac-option-button" onclick="goToStep(${targetStep})" 
+                            style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 8px; cursor: pointer; text-align: left;">
+                        ${option.text}
+                    </button>
+                `;
+            });
+            
+            stepHTML += '</div>';
         } else {
-            // Mostrar "Continuar" para ir al siguiente paso
-            stepHTML += `
-                <button class="wac-button" onclick="nextStep()" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
-                    ➡️ Continuar (${currentStep + 1}/${funnelSteps.length})
-                </button>
-            `;
+            // Si no hay opciones, mostrar botón de continuar (comportamiento anterior)
+            if (currentStep === funnelSteps.length - 1) {
+                // Último paso
+                stepHTML += `
+                    <button class="wac-button" onclick="finishChat()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
+                        ✅ Finalizar Chat
+                    </button>
+                `;
+            } else {
+                // Paso intermedio
+                stepHTML += `
+                    <button class="wac-button" onclick="nextStep()" style="width: 100%; padding: 10px; background: #007cba; color: white; border: none; border-radius: 5px; margin-bottom: 10px; cursor: pointer;">
+                        ➡️ Continuar
+                    </button>
+                `;
+            }
         }
         
         widgetContent.innerHTML = stepHTML;
@@ -118,6 +129,16 @@
         currentStep++;
         console.log('WAC Frontend - Pasando al siguiente paso:', currentStep);
         showCurrentStep();
+    }
+    
+    function goToStep(stepIndex) {
+        if (stepIndex >= 0 && stepIndex < funnelSteps.length) {
+            currentStep = stepIndex;
+            console.log('WAC Frontend - Yendo al paso:', currentStep);
+            showCurrentStep();
+        } else {
+            console.error('WAC Frontend - Paso inválido:', stepIndex);
+        }
     }
     
     function finishChat() {
@@ -149,6 +170,7 @@
         toggle: toggleChat,
         isOpen: () => isOpen,
         nextStep: nextStep,
+        goToStep: goToStep,
         finishChat: finishChat,
         handleWhatsApp: handleWhatsApp
     };
