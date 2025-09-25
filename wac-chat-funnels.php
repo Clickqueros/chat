@@ -416,16 +416,41 @@ class WAC_Chat_Funnels_Simple {
         
         // Función para eliminar una opción
         function removeOption(stepId, optionId) {
+            console.log('removeOption llamado con:', stepId, optionId);
+            
             // Buscar opciones normales, de enlace y de WhatsApp
-            let option = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`).closest('.wac-option-item');
-            if (!option) {
-                option = document.querySelector(`input[name="${stepId}_link_text_${optionId}"]`).closest('.wac-option-item');
+            let option = null;
+            
+            // Buscar opción normal
+            const normalInput = document.querySelector(`input[name="${stepId}_option_text_${optionId}"]`);
+            if (normalInput) {
+                option = normalInput.closest('.wac-option-item');
+                console.log('Encontrada opción normal:', option);
             }
+            
+            // Buscar opción de enlace
             if (!option) {
-                option = document.querySelector(`input[name="${stepId}_whatsapp_text_${optionId}"]`).closest('.wac-option-item');
+                const linkInput = document.querySelector(`input[name="${stepId}_link_text_${optionId}"]`);
+                if (linkInput) {
+                    option = linkInput.closest('.wac-option-item');
+                    console.log('Encontrada opción de enlace:', option);
+                }
             }
+            
+            // Buscar opción de WhatsApp
+            if (!option) {
+                const whatsappInput = document.querySelector(`input[name="${stepId}_whatsapp_text_${optionId}"]`);
+                if (whatsappInput) {
+                    option = whatsappInput.closest('.wac-option-item');
+                    console.log('Encontrada opción de WhatsApp:', option);
+                }
+            }
+            
             if (option) {
+                console.log('Eliminando opción:', option);
                 option.remove();
+            } else {
+                console.error('No se encontró la opción para eliminar:', stepId, optionId);
             }
         }
         
